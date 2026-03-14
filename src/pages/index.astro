@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchBox from '../components/SearchBox.astro';
+import DefinitionCard from '../components/DefinitionCard.astro';
+import { supabase } from '../lib/supabase';
+
+// Fetch popular definitions
+const { data: definitions } = await supabase
+  .from('crossword_definitions')
+  .select('slug, definition_he')
+  .order('search_count', { ascending: false })
+  .limit(12);
+
+// Word length ranges
+const wordLengths = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+---
+
+<BaseLayout title="פתרונות תשבצים, מילים נרדפות וחרוזים">
+  <!-- Hero Section -->
+  <section class="text-center py-12">
+    <h1 class="text-4xl md:text-5xl font-bold text-text mb-4">
+      מצאתי - פתרונות תשבצים בעברית
+    </h1>
+    <p class="text-xl text-text-muted mb-8">
+      חפש פתרונות להגדרות, מילים נרדפות, חרוזים ועוד
+    </p>
+    <SearchBox />
+  </section>
+
+  <!-- Popular Definitions -->
+  {definitions && definitions.length > 0 && (
+    <section class="py-8">
+      <h2 class="text-2xl font-bold mb-6">הגדרות פופולריות</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {definitions.map((def) => (
+          <DefinitionCard
+            slug={def.slug}
+            definition={def.definition_he}
+          />
+        ))}
+      </div>
+    </section>
+  )}
+
+  <!-- Words by Length -->
+  <section class="py-8">
+    <h2 class="text-2xl font-bold mb-6">מילים לפי אורך</h2>
+    <div class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+      {wordLengths.map((n) => (
+        <a
+          href={`/words/${n}-letters`}
+          class="p-4 bg-surface border border-gray-200 rounded-lg text-center hover:border-primary hover:shadow-md transition-all"
+        >
+          <span class="text-3xl font-bold text-primary">{n}</span>
+          <span class="block text-sm text-text-muted mt-1">אותיות</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="py-8">
+    <h2 class="text-2xl font-bold mb-6">קטגוריות</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <a href="/solver" class="p-6 bg-primary/10 border border-primary/20 rounded-xl text-center hover:bg-primary/20 transition-all">
+        <span class="text-4xl">&#129513;</span>
+        <span class="block text-lg font-semibold mt-2">פותר תשבצים</span>
+        <span class="block text-sm text-text-muted">חיפוש לפי הגדרה או תבנית</span>
+      </a>
+      <a href="/synonyms" class="p-6 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center hover:bg-amber-500/20 transition-all">
+        <span class="text-4xl">&#128218;</span>
+        <span class="block text-lg font-semibold mt-2">מילים נרדפות</span>
+        <span class="block text-sm text-text-muted">מצא מילה נרדפת</span>
+      </a>
+      <a href="/rhymes" class="p-6 bg-green-500/10 border border-green-500/20 rounded-xl text-center hover:bg-green-500/20 transition-all">
+        <span class="text-4xl">&#127925;</span>
+        <span class="block text-lg font-semibold mt-2">חרוזים</span>
+        <span class="block text-sm text-text-muted">מצא חרוז למילה</span>
+      </a>
+      <a href="/wordle" class="p-6 bg-purple-500/10 border border-purple-500/20 rounded-xl text-center hover:bg-purple-500/20 transition-all">
+        <span class="text-4xl">&#127919;</span>
+        <span class="block text-lg font-semibold mt-2">פותר וורדל</span>
+        <span class="block text-sm text-text-muted">עזרה במשחק וורדל</span>
+      </a>
+    </div>
+  </section>
+</BaseLayout>

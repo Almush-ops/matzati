@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabase } from '../lib/supabase';
+
+const query = Astro.url.searchParams.get('q') || '';
+let results: any[] = [];
+
+if (query) {
+  // Search in definitions
+  const { data: definitions } = await supabase
+    .from('crossword_definitions')
+    .select(`
+      slug,
+      definition_he,
+      crossword_solutions (solution, letter_count)
+    `)
+    .ilike('definition_he', `%${query}%`)
+    .limit(20);
+
+  results = definitions || [];
+}
+---
+
+<BaseLayout title="פותר תשבצים אוטומטי" description="חפש פתרונות לתשבצים לפי הגדרה או תבנית אותיות">
+  <section class="text-center py-8">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4">פותר תשבצים אוטומטי</h1>
+    <p class="text-text-muted mb-8">הקלד הגדרה או תבנית (לדוגמה: א?ב?ה)</p>
+
+    <form action="/solver" method="get" class="max-w-2xl mx-auto">
+      <div class="relative">
+        <input
+          type="search"
+          name="q"
+          value={query}
+          placeholder="הקלד הגדרה..."
+          class="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-full focus:border-primary outline-none"
+        />
+        <button
+          type="submit"
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-primary text-white px-6 py-2 rounded-full hover:bg-primary-dark transition-colors"
+        >
+          חפש
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {query && (
+    <section class="py-8">
+      <h2 class="text-xl font-semibold mb-4">
+        תוצאות עבור "{query}" ({results.length} נמצאו)
+      </h2>
+
+      {results.length > 0 ? (
+        <div class="space-y-4">
+          {results.map((def) => (
+            <a
+              href={`/definition/${def.slug}`}
+              class="block p-6 bg-surface border border-gray-200 rounded-lg hover:border-primary transition-all"
+            >
+              <h3 class="text-lg font-semibold">{def.definition_he}</h3>
+              {def.crossword_solutions && def.crossword_solutions.length > 0 && (
+                <div class="mt-2 flex flex-wrap gap-2">
+                  {def.crossword_solutions.slice(0, 5).map((sol: any) => (
+                    <span class="px-3 py-1 bg-gray-100 rounded-full text-sm">
+                      {sol.solution} ({sol.letter_count} אותיות)
+                    </span>
+                  ))}
+                  {def.crossword_solutions.length > 5 && (
+                    <span class="px-3 py-1 text-text-muted text-sm">
+                      +{def.crossword_solutions.length - 5} עוד
+                    </span>
+                  )}
+                </div>
+              )}
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="bg-gray-50 rounded-lg p-8 text-center">
+          <p class="text-text-muted">לא נמצאו תוצאות עבור "{query}"</p>
+          <p class="text-sm mt-2">נסה לחפש מילה אחרת או בדוק את האיות</p>
+        </div>
+      )}
+    </section>
+  )}
+
+  <!-- Tips -->
+  <section class="py-8 bg-surface border border-gray-200 rounded-lg p-6 mt-8">
+    <h2 class="text-xl font-semibold mb-4">טיפים לחיפוש</h2>
+    <ul class="space-y-2 text-text-muted">
+      <li>• הקלד את ההגדרה כמו שהיא מופיעה בתשבץ</li>
+      <li>• לחיפוש לפי תבנית: השתמש ב-? עבור אות לא ידועה (לדוגמה: א?ב?ה)</li>
+      <li>• אם לא מצאת - נסה מילה נרדפת להגדרה</li>
+    </ul>
+  </section>
+</BaseLayout>

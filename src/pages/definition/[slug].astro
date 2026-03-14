@@ -1,0 +1,125 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SearchBox from '../../components/SearchBox.astro';
+import { supabase } from '../../lib/supabase';
+
+export async function getStaticPaths() {
+  const { data: definitions } = await supabase
+    .from('crossword_definitions')
+    .select('slug');
+
+  return definitions?.map((def) => ({
+    params: { slug: def.slug },
+  })) || [];
+}
+
+const { slug } = Astro.params;
+
+// Fetch definition and solutions
+const { data: definition } = await supabase
+  .from('crossword_definitions')
+  .select('*')
+  .eq('slug', slug)
+  .single();
+
+const { data: solutions } = await supabase
+  .from('crossword_solutions')
+  .select('*')
+  .eq('definition_id', definition?.id)
+  .order('letter_count');
+
+// Group solutions by letter count
+const solutionsByLength = solutions?.reduce((acc, sol) => {
+  const key = sol.letter_count;
+  if (!acc[key]) acc[key] = [];
+  acc[key].push(sol);
+  return acc;
+}, {} as Record<number, typeof solutions>) || {};
+
+// Fetch related definitions
+const { data: relatedDefs } = await supabase
+  .from('crossword_definitions')
+  .select('slug, definition_he')
+  .eq('category', definition?.category)
+  .neq('slug', slug)
+  .limit(8);
+
+const pageTitle = `${definition?.definition_he} - פתרון תשבץ`;
+const pageDescription = `פתרונות להגדרת התשבץ "${definition?.definition_he}" - ${solutions?.length || 0} פתרונות לפי מספר אותיות`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <article>
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-text-muted mb-4">
+      <a href="/" class="hover:text-primary">ראשי</a>
+      <span class="mx-2">/</span>
+      <span>הגדרות</span>
+      <span class="mx-2">/</span>
+      <span class="text-text">{definition?.definition_he}</span>
+    </nav>
+
+    <!-- Title -->
+    <h1 class="text-3xl md:text-4xl font-bold mb-2">
+      {definition?.definition_he}
+    </h1>
+    <p class="text-text-muted mb-8">
+      {solutions?.length || 0} פתרונות נמצאו להגדרה זו
+    </p>
+
+    <!-- Solutions by Length -->
+    {Object.keys(solutionsByLength).length > 0 ? (
+      <div class="space-y-6">
+        {Object.entries(solutionsByLength)
+          .sort(([a], [b]) => Number(a) - Number(b))
+          .map(([length, sols]) => (
+            <section class="bg-surface border border-gray-200 rounded-lg p-6">
+              <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                <span class="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">
+                  {length}
+                </span>
+                פתרונות של {length} אותיות
+              </h2>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {sols.map((sol) => (
+                  <div class="p-3 bg-gray-50 rounded-lg">
+                    <span class="font-semibold text-lg">{sol.solution}</span>
+                    {sol.explanation && (
+                      <p class="text-sm text-text-muted mt-1">{sol.explanation}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+      </div>
+    ) : (
+      <div class="bg-gray-50 rounded-lg p-8 text-center">
+        <p class="text-text-muted">לא נמצאו פתרונות להגדרה זו עדיין.</p>
+      </div>
+    )}
+
+    <!-- Related Definitions -->
+    {relatedDefs && relatedDefs.length > 0 && (
+      <section class="mt-12">
+        <h2 class="text-2xl font-bold mb-6">הגדרות קשורות</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {relatedDefs.map((def) => (
+            <a
+              href={`/definition/${def.slug}`}
+              class="p-4 bg-surface border border-gray-200 rounded-lg hover:border-primary transition-all"
+            >
+              {def.definition_he}
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Search CTA -->
+    <section class="mt-12 bg-primary/5 rounded-xl p-8 text-center">
+      <h2 class="text-xl font-semibold mb-4">לא מצאת את מה שחיפשת?</h2>
+      <SearchBox placeholder="חפש הגדרה אחרת..." />
+    </section>
+  </article>
+</BaseLayout>

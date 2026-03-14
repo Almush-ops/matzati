@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+// Get unique words with rhymes
+const { data: rhymeWords } = await supabase
+  .from('rhymes')
+  .select('word')
+  .limit(100);
+
+const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
+---
+
+<BaseLayout title="חרוזים בעברית" description="מילון חרוזים בעברית - מצא חרוז לכל מילה">
+  <section class="text-center py-8">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4">חרוזים בעברית</h1>
+    <p class="text-text-muted mb-8">מצא חרוז לכל מילה - לשירים, ברכות ועוד</p>
+
+    <form action="/rhymes" method="get" class="max-w-xl mx-auto mb-8">
+      <div class="relative">
+        <input
+          type="search"
+          name="q"
+          placeholder="הקלד מילה..."
+          class="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-full focus:border-primary outline-none"
+        />
+        <button
+          type="submit"
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-primary text-white px-6 py-2 rounded-full"
+        >
+          חפש
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Popular Rhyme Words -->
+  {uniqueWords.length > 0 && (
+    <section class="py-8">
+      <h2 class="text-2xl font-bold mb-6">מילים פופולריות</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        {uniqueWords.slice(0, 24).map((word) => (
+          <a
+            href={`/rhymes/${word}`}
+            class="p-4 bg-surface border border-gray-200 rounded-lg text-center hover:border-primary transition-all"
+          >
+            {word}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <!-- Rhyme Types -->
+  <section class="py-8 bg-surface border border-gray-200 rounded-lg p-6">
+    <h2 class="text-xl font-semibold mb-4">סוגי חרוזים</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-semibold mb-2">חרוז מלא</h3>
+        <p class="text-sm text-text-muted">מילים עם סיומת זהה (אהבה - תשובה)</p>
+      </div>
+      <div class="p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-semibold mb-2">חרוז חלקי</h3>
+        <p class="text-sm text-text-muted">מילים עם צליל דומה (שלום - יום)</p>
+      </div>
+      <div class="p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-semibold mb-2">אסונאנס</h3>
+        <p class="text-sm text-text-muted">חזרה על תנועות דומות</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,91 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+export async function getStaticPaths() {
+  const { data: synonyms } = await supabase
+    .from('synonyms')
+    .select('word');
+
+  const uniqueWords = [...new Set(synonyms?.map(s => s.word) || [])];
+
+  return uniqueWords.map((word) => ({
+    params: { word },
+  }));
+}
+
+const { word } = Astro.params;
+
+// Fetch synonyms for this word
+const { data: synonyms } = await supabase
+  .from('synonyms')
+  .select('*')
+  .eq('word', word);
+
+// Fetch antonyms (reverse lookup)
+const { data: antonyms } = await supabase
+  .from('synonyms')
+  .select('word')
+  .eq('synonym', word);
+
+const pageTitle = `מילים נרדפות ל"${word}"`;
+const pageDescription = `${synonyms?.length || 0} מילים נרדפות למילה "${word}" בעברית`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <article>
+    <nav class="text-sm text-text-muted mb-4">
+      <a href="/" class="hover:text-primary">ראשי</a>
+      <span class="mx-2">/</span>
+      <a href="/synonyms" class="hover:text-primary">מילים נרדפות</a>
+      <span class="mx-2">/</span>
+      <span class="text-text">{word}</span>
+    </nav>
+
+    <h1 class="text-3xl md:text-4xl font-bold mb-2">
+      מילים נרדפות ל"{word}"
+    </h1>
+    <p class="text-text-muted mb-8">
+      {synonyms?.length || 0} מילים נרדפות נמצאו
+    </p>
+
+    {synonyms && synonyms.length > 0 ? (
+      <section class="bg-surface border border-gray-200 rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">מילים נרדפות</h2>
+        <div class="flex flex-wrap gap-3">
+          {synonyms.map((syn) => (
+            <a
+              href={`/synonyms/${syn.synonym}`}
+              class="px-4 py-2 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-all"
+            >
+              {syn.synonym}
+              {syn.relation_type === 'exact' && (
+                <span class="text-xs mr-1">(מדויק)</span>
+              )}
+            </a>
+          ))}
+        </div>
+      </section>
+    ) : (
+      <div class="bg-gray-50 rounded-lg p-8 text-center mb-8">
+        <p class="text-text-muted">לא נמצאו מילים נרדפות למילה זו.</p>
+      </div>
+    )}
+
+    {antonyms && antonyms.length > 0 && (
+      <section class="bg-surface border border-gray-200 rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">מילים קשורות</h2>
+        <div class="flex flex-wrap gap-3">
+          {antonyms.map((ant) => (
+            <a
+              href={`/synonyms/${ant.word}`}
+              class="px-4 py-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-all"
+            >
+              {ant.word}
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+  </article>
+</BaseLayout>

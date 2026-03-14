@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+// Get word counts by length
+const { data: counts } = await supabase
+  .from('hebrew_words')
+  .select('letter_count');
+
+const countByLength: Record<number, number> = {};
+counts?.forEach(w => {
+  countByLength[w.letter_count] = (countByLength[w.letter_count] || 0) + 1;
+});
+
+const lengths = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+---
+
+<BaseLayout title="מילים בעברית לפי אורך" description="רשימת מילים בעברית מחולקות לפי מספר אותיות">
+  <section class="text-center py-8">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4">מילים בעברית לפי אורך</h1>
+    <p class="text-text-muted mb-8">בחר מספר אותיות לצפייה ברשימת המילים</p>
+  </section>
+
+  <section class="py-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {lengths.map((n) => (
+        <a
+          href={`/words/${n}-letters`}
+          class="p-6 bg-surface border border-gray-200 rounded-xl text-center hover:border-primary hover:shadow-lg transition-all"
+        >
+          <span class="text-4xl font-bold text-primary block">{n}</span>
+          <span class="text-lg font-semibold mt-2 block">אותיות</span>
+          {countByLength[n] && (
+            <span class="text-sm text-text-muted mt-1 block">
+              {countByLength[n].toLocaleString('he-IL')} מילים
+            </span>
+          )}
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="py-8 bg-surface border border-gray-200 rounded-lg p-6">
+    <h2 class="text-xl font-semibold mb-4">שימושים נפוצים</h2>
+    <ul class="space-y-2 text-text-muted">
+      <li>• <strong>2-3 אותיות</strong> - מילות קישור, מילים נפוצות בתשבצים</li>
+      <li>• <strong>4-5 אותיות</strong> - מילים רגילות, פתרונות תשבצים</li>
+      <li>• <strong>5 אותיות</strong> - משחק וורדל בעברית</li>
+      <li>• <strong>6+ אותיות</strong> - מילים מורכבות, ביטויים</li>
+    </ul>
+  </section>
+</BaseLayout>

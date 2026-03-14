@@ -1,0 +1,19 @@
+---
+interface Props {
+  slug: string;
+  definition: string;
+  solutionCount?: number;
+}
+
+const { slug, definition, solutionCount } = Astro.props;
+---
+
+<a
+  href={`/definition/${slug}`}
+  class="block p-4 bg-surface border border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all"
+>
+  <h3 class="font-semibold text-lg text-text">{definition}</h3>
+  {solutionCount && (
+    <p class="text-sm text-text-muted mt-1">{solutionCount} פתרונות</p>
+  )}
+</a>
