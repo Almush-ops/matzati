@@ -1,24 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { supabase } from '../lib/supabase';
-
-const query = Astro.url.searchParams.get('q') || '';
-let results: any[] = [];
-
-if (query) {
-  // Search in definitions
-  const { data: definitions } = await supabase
-    .from('crossword_definitions')
-    .select(`
-      slug,
-      definition_he,
-      crossword_solutions (solution, letter_count)
-    `)
-    .ilike('definition_he', `%${query}%`)
-    .limit(20);
-
-  results = definitions || [];
-}
 ---
 
 <BaseLayout title="פותר תשבצים אוטומטי בעברית | חיפוש לפי הגדרה" description="פותר תשבצים חינם - הקלד הגדרה או תבנית אותיות ומצא את הפתרון. מאגר של אלפי פתרונות לתשבצים בעברית.">
@@ -26,12 +7,11 @@ if (query) {
     <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">פותר תשבצים אוטומטי</h1>
     <p class="text-muted mb-8">הקלד הגדרה או תבנית (לדוגמה: א?ב?ה)</p>
 
-    <form action="/solver" method="get" class="max-w-2xl mx-auto">
+    <form id="search-form" class="max-w-2xl mx-auto">
       <div class="relative">
         <input
           type="search"
-          name="q"
-          value={query}
+          id="search-input"
           placeholder="הקלד הגדרה..."
           class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
         />
@@ -45,45 +25,17 @@ if (query) {
     </form>
   </section>
 
-  {query && (
-    <section class="py-8 md:py-12">
-      <h2 class="text-xl font-semibold mb-6 text-text">
-        תוצאות עבור "{query}" ({results.length} נמצאו)
-      </h2>
+  <!-- Results container -->
+  <section id="results-section" class="py-8 md:py-12 hidden">
+    <h2 id="results-title" class="text-xl font-semibold mb-6 text-text"></h2>
+    <div id="results-container"></div>
+  </section>
 
-      {results.length > 0 ? (
-        <div class="space-y-4">
-          {results.map((def) => (
-            <a
-              href={`/definition/${def.slug}`}
-              class="group block p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/10 transition-all"
-            >
-              <h3 class="text-lg font-semibold text-text group-hover:text-brand-600 transition-colors">{def.definition_he}</h3>
-              {def.crossword_solutions && def.crossword_solutions.length > 0 && (
-                <div class="mt-3 flex flex-wrap gap-2">
-                  {def.crossword_solutions.slice(0, 5).map((sol: any) => (
-                    <span class="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-sm">
-                      {sol.solution} ({sol.letter_count} אותיות)
-                    </span>
-                  ))}
-                  {def.crossword_solutions.length > 5 && (
-                    <span class="px-3 py-1 text-muted text-sm">
-                      +{def.crossword_solutions.length - 5} עוד
-                    </span>
-                  )}
-                </div>
-              )}
-            </a>
-          ))}
-        </div>
-      ) : (
-        <div class="bg-brand-50 rounded-xl p-8 text-center border border-brand-100">
-          <p class="text-muted">לא נמצאו תוצאות עבור "{query}"</p>
-          <p class="text-sm mt-2 text-muted">נסה לחפש מילה אחרת או בדוק את האיות</p>
-        </div>
-      )}
-    </section>
-  )}
+  <!-- Loading state -->
+  <div id="loading" class="hidden py-12 text-center">
+    <div class="inline-block w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+    <p class="mt-4 text-muted">מחפש...</p>
+  </div>
 
   <!-- Tips -->
   <section class="py-8 md:py-12 bg-brand-50 border border-brand-100 rounded-xl p-6 md:p-8 mt-8">
@@ -104,3 +56,148 @@ if (query) {
     </ul>
   </section>
 </BaseLayout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  const form = document.getElementById('search-form') as HTMLFormElement;
+  const input = document.getElementById('search-input') as HTMLInputElement;
+  const resultsSection = document.getElementById('results-section')!;
+  const resultsTitle = document.getElementById('results-title')!;
+  const resultsContainer = document.getElementById('results-container')!;
+  const loading = document.getElementById('loading')!;
+
+  async function search(query: string) {
+    if (!query.trim()) return;
+
+    // Update URL
+    const url = new URL(window.location.href);
+    url.searchParams.set('q', query);
+    window.history.pushState({}, '', url);
+
+    // Show loading
+    loading.classList.remove('hidden');
+    resultsSection.classList.add('hidden');
+
+    try {
+      // Check if it's a pattern search (contains ?)
+      const isPattern = query.includes('?');
+
+      let results: any[] = [];
+
+      if (isPattern) {
+        // Pattern search - search in solutions
+        const pattern = query.replace(/\?/g, '_'); // SQL LIKE uses _ for single char
+        const { data } = await supabase
+          .from('crossword_solutions')
+          .select(`
+            solution,
+            letter_count,
+            crossword_definitions (slug, definition_he)
+          `)
+          .ilike('solution', pattern)
+          .limit(30);
+
+        results = data || [];
+      } else {
+        // Text search - search in definitions
+        const { data } = await supabase
+          .from('crossword_definitions')
+          .select(`
+            slug,
+            definition_he,
+            crossword_solutions (solution, letter_count)
+          `)
+          .ilike('definition_he', `%${query}%`)
+          .limit(20);
+
+        results = data || [];
+      }
+
+      // Hide loading
+      loading.classList.add('hidden');
+
+      // Show results
+      resultsSection.classList.remove('hidden');
+      resultsTitle.textContent = `תוצאות עבור "${query}" (${results.length} נמצאו)`;
+
+      if (results.length > 0) {
+        if (isPattern) {
+          // Pattern results - show solutions grouped
+          resultsContainer.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              ${results.map((sol: any) => `
+                <a href="/definition/${sol.crossword_definitions?.slug || ''}"
+                   class="group p-4 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-lg transition-all text-center">
+                  <span class="text-2xl font-bold text-brand-600">${sol.solution}</span>
+                  <p class="text-sm text-muted mt-2">${sol.crossword_definitions?.definition_he || ''}</p>
+                </a>
+              `).join('')}
+            </div>
+          `;
+        } else {
+          // Definition results
+          resultsContainer.innerHTML = `
+            <div class="space-y-4">
+              ${results.map((def: any) => `
+                <a href="/definition/${def.slug}"
+                   class="group block p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/10 transition-all">
+                  <h3 class="text-lg font-semibold text-text group-hover:text-brand-600 transition-colors">${def.definition_he}</h3>
+                  ${def.crossword_solutions && def.crossword_solutions.length > 0 ? `
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      ${def.crossword_solutions.slice(0, 5).map((sol: any) => `
+                        <span class="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-sm">
+                          ${sol.solution} (${sol.letter_count} אותיות)
+                        </span>
+                      `).join('')}
+                      ${def.crossword_solutions.length > 5 ? `
+                        <span class="px-3 py-1 text-muted text-sm">
+                          +${def.crossword_solutions.length - 5} עוד
+                        </span>
+                      ` : ''}
+                    </div>
+                  ` : ''}
+                </a>
+              `).join('')}
+            </div>
+          `;
+        }
+      } else {
+        resultsContainer.innerHTML = `
+          <div class="bg-brand-50 rounded-xl p-8 text-center border border-brand-100">
+            <p class="text-muted">לא נמצאו תוצאות עבור "${query}"</p>
+            <p class="text-sm mt-2 text-muted">נסה לחפש מילה אחרת או בדוק את האיות</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      loading.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+      resultsTitle.textContent = 'שגיאה בחיפוש';
+      resultsContainer.innerHTML = `
+        <div class="bg-red-50 rounded-xl p-8 text-center border border-red-100">
+          <p class="text-red-600">אירעה שגיאה בחיפוש. נסה שוב.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Handle form submit
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    search(input.value);
+  });
+
+  // Check URL for query on page load
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get('q');
+  if (initialQuery) {
+    input.value = initialQuery;
+    search(initialQuery);
+  }
+</script>

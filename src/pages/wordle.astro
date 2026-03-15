@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { supabase } from '../lib/supabase';
 
-// Get 5-letter words for Wordle
+// Get 5-letter words for Wordle (static, at build time)
 const { data: words } = await supabase
   .from('hebrew_words')
   .select('word')
@@ -17,11 +17,11 @@ const wordList = words?.map(w => w.word) || [];
     <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">פותר וורדל בעברית</h1>
     <p class="text-muted mb-8">מצא מילים בנות 5 אותיות למשחק וורדל</p>
 
-    <form action="/wordle" method="get" class="max-w-xl mx-auto mb-8">
+    <form id="search-form" class="max-w-xl mx-auto mb-8">
       <div class="relative">
         <input
           type="search"
-          name="pattern"
+          id="search-input"
           placeholder="הקלד תבנית (? = אות לא ידועה, לדוגמה: א??ב?)"
           class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
         />
@@ -35,8 +35,20 @@ const wordList = words?.map(w => w.word) || [];
     </form>
   </section>
 
+  <!-- Results container -->
+  <section id="results-section" class="py-8 md:py-12 hidden">
+    <h2 id="results-title" class="text-xl font-semibold mb-6 text-text"></h2>
+    <div id="results-container"></div>
+  </section>
+
+  <!-- Loading state -->
+  <div id="loading" class="hidden py-12 text-center">
+    <div class="inline-block w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+    <p class="mt-4 text-muted">מחפש...</p>
+  </div>
+
   <!-- Quick access to 5-letter words -->
-  <section class="py-8 md:py-12">
+  <section id="words-section" class="py-8 md:py-12">
     <h2 class="text-2xl font-bold mb-6 text-text">מילים בנות 5 אותיות</h2>
     <p class="text-muted mb-6">
       <a href="/words/5-letters" class="text-brand-600 hover:text-brand-700 underline">
@@ -74,3 +86,108 @@ const wordList = words?.map(w => w.word) || [];
     </ul>
   </section>
 </BaseLayout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  const form = document.getElementById('search-form') as HTMLFormElement;
+  const input = document.getElementById('search-input') as HTMLInputElement;
+  const resultsSection = document.getElementById('results-section')!;
+  const resultsTitle = document.getElementById('results-title')!;
+  const resultsContainer = document.getElementById('results-container')!;
+  const wordsSection = document.getElementById('words-section')!;
+  const loading = document.getElementById('loading')!;
+
+  async function search(pattern: string) {
+    if (!pattern.trim()) return;
+
+    // Update URL
+    const url = new URL(window.location.href);
+    url.searchParams.set('pattern', pattern);
+    window.history.pushState({}, '', url);
+
+    // Show loading, hide words section
+    loading.classList.remove('hidden');
+    resultsSection.classList.add('hidden');
+    wordsSection.classList.add('hidden');
+
+    try {
+      // Convert pattern: ? becomes _ for SQL LIKE
+      const sqlPattern = pattern.replace(/\?/g, '_');
+
+      const { data: results } = await supabase
+        .from('hebrew_words')
+        .select('word')
+        .eq('letter_count', 5)
+        .ilike('word', sqlPattern)
+        .limit(50);
+
+      // Hide loading
+      loading.classList.add('hidden');
+
+      // Show results
+      resultsSection.classList.remove('hidden');
+      const count = results?.length || 0;
+      resultsTitle.textContent = `תוצאות עבור "${pattern}" (${count} נמצאו)`;
+
+      if (count > 0) {
+        resultsContainer.innerHTML = `
+          <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+            ${results!.map((w: any) => `
+              <span class="p-3 bg-surface border-2 border-brand-200 rounded-xl text-center font-semibold text-brand-700 hover:bg-brand-50 transition-all">
+                ${w.word}
+              </span>
+            `).join('')}
+          </div>
+          <p class="mt-6 text-center">
+            <button id="clear-search" class="text-brand-600 hover:text-brand-700 underline">
+              נקה חיפוש
+            </button>
+          </p>
+        `;
+
+        document.getElementById('clear-search')?.addEventListener('click', () => {
+          input.value = '';
+          resultsSection.classList.add('hidden');
+          wordsSection.classList.remove('hidden');
+          window.history.pushState({}, '', '/wordle');
+        });
+      } else {
+        resultsContainer.innerHTML = `
+          <div class="bg-brand-50 rounded-xl p-8 text-center border border-brand-100">
+            <p class="text-muted">לא נמצאו מילים התואמות לתבנית "${pattern}"</p>
+            <p class="text-sm mt-2 text-muted">נסה תבנית אחרת</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      loading.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+      resultsTitle.textContent = 'שגיאה בחיפוש';
+      resultsContainer.innerHTML = `
+        <div class="bg-red-50 rounded-xl p-8 text-center border border-red-100">
+          <p class="text-red-600">אירעה שגיאה בחיפוש. נסה שוב.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Handle form submit
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    search(input.value);
+  });
+
+  // Check URL for pattern on page load
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialPattern = urlParams.get('pattern');
+  if (initialPattern) {
+    input.value = initialPattern;
+    search(initialPattern);
+  }
+</script>

@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabase } from '../../lib/supabase';
 
-// Get unique words with rhymes
+// Get unique words with rhymes (static, at build time)
 const { data: rhymeWords } = await supabase
   .from('rhymes')
   .select('word')
@@ -16,11 +16,11 @@ const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
     <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">חרוזים בעברית</h1>
     <p class="text-muted mb-8">מצא חרוז לכל מילה - לשירים, ברכות ועוד</p>
 
-    <form action="/rhymes" method="get" class="max-w-xl mx-auto mb-8">
+    <form id="search-form" class="max-w-xl mx-auto mb-8">
       <div class="relative">
         <input
           type="search"
-          name="q"
+          id="search-input"
           placeholder="הקלד מילה..."
           class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
         />
@@ -34,22 +34,37 @@ const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
     </form>
   </section>
 
+  <!-- Results container -->
+  <section id="results-section" class="py-8 md:py-12 hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h2 id="results-title" class="text-xl font-semibold text-text"></h2>
+      <button id="clear-search" class="text-brand-600 hover:text-brand-700 underline text-sm">
+        נקה חיפוש
+      </button>
+    </div>
+    <div id="results-container"></div>
+  </section>
+
+  <!-- Loading state -->
+  <div id="loading" class="hidden py-12 text-center">
+    <div class="inline-block w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+    <p class="mt-4 text-muted">מחפש...</p>
+  </div>
+
   <!-- Popular Rhyme Words -->
-  {uniqueWords.length > 0 && (
-    <section class="py-8 md:py-12">
-      <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {uniqueWords.slice(0, 24).map((word) => (
-          <a
-            href={`/rhymes/${word}`}
-            class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
-          >
-            <span class="group-hover:text-brand-600 transition-colors">{word}</span>
-          </a>
-        ))}
-      </div>
-    </section>
-  )}
+  <section id="popular-section" class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {uniqueWords.slice(0, 24).map((word) => (
+        <a
+          href={`/rhymes/${word}`}
+          class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
+        >
+          <span class="group-hover:text-brand-600 transition-colors">{word}</span>
+        </a>
+      ))}
+    </div>
+  </section>
 
   <!-- Rhyme Types -->
   <section class="py-8 md:py-12 bg-brand-50 border border-brand-100 rounded-xl p-6 md:p-8">
@@ -70,3 +85,102 @@ const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  const form = document.getElementById('search-form') as HTMLFormElement;
+  const input = document.getElementById('search-input') as HTMLInputElement;
+  const resultsSection = document.getElementById('results-section')!;
+  const resultsTitle = document.getElementById('results-title')!;
+  const resultsContainer = document.getElementById('results-container')!;
+  const popularSection = document.getElementById('popular-section')!;
+  const loading = document.getElementById('loading')!;
+  const clearBtn = document.getElementById('clear-search')!;
+
+  async function search(query: string) {
+    if (!query.trim()) return;
+
+    // Update URL
+    const url = new URL(window.location.href);
+    url.searchParams.set('q', query);
+    window.history.pushState({}, '', url);
+
+    // Show loading
+    loading.classList.remove('hidden');
+    popularSection.classList.add('hidden');
+    resultsSection.classList.add('hidden');
+
+    try {
+      // Search for rhymes
+      const { data: results } = await supabase
+        .from('rhymes')
+        .select('word, rhyme, rhyme_type')
+        .or(`word.ilike.%${query}%,rhyme.ilike.%${query}%`)
+        .limit(30);
+
+      // Get unique words from results
+      const uniqueWords = [...new Set(results?.map(r => r.word) || [])];
+
+      loading.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+      resultsTitle.textContent = `תוצאות עבור "${query}" (${uniqueWords.length} נמצאו)`;
+
+      if (uniqueWords.length > 0) {
+        resultsContainer.innerHTML = `
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            ${uniqueWords.map((word: string) => `
+              <a href="/rhymes/${encodeURIComponent(word)}"
+                 class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md transition-all">
+                <span class="group-hover:text-brand-600 transition-colors">${word}</span>
+              </a>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        resultsContainer.innerHTML = `
+          <div class="bg-brand-50 rounded-xl p-8 text-center border border-brand-100">
+            <p class="text-muted">לא נמצאו חרוזים עבור "${query}"</p>
+            <p class="text-sm mt-2 text-muted">נסה מילה אחרת</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      loading.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+      resultsTitle.textContent = 'שגיאה בחיפוש';
+      resultsContainer.innerHTML = `
+        <div class="bg-red-50 rounded-xl p-8 text-center border border-red-100">
+          <p class="text-red-600">אירעה שגיאה בחיפוש. נסה שוב.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Handle form submit
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    search(input.value);
+  });
+
+  // Handle clear button
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    resultsSection.classList.add('hidden');
+    popularSection.classList.remove('hidden');
+    window.history.pushState({}, '', '/rhymes');
+  });
+
+  // Check URL for query on page load
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get('q');
+  if (initialQuery) {
+    input.value = initialQuery;
+    search(initialQuery);
+  }
+</script>

@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabase } from '../../lib/supabase';
 
-// Get unique words with synonyms
+// Get unique words with synonyms (static, at build time)
 const { data: words } = await supabase
   .from('synonyms')
   .select('word')
@@ -10,7 +10,7 @@ const { data: words } = await supabase
 
 const uniqueWords = [...new Set(words?.map(w => w.word) || [])];
 
-// Group by first letter
+// Hebrew letters for the filter
 const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
 ---
 
@@ -19,11 +19,11 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">מילים נרדפות בעברית</h1>
     <p class="text-muted mb-8">מצא מילה נרדפת לכל מילה בעברית</p>
 
-    <form action="/synonyms" method="get" class="max-w-xl mx-auto mb-8">
+    <form id="search-form" class="max-w-xl mx-auto mb-8">
       <div class="relative">
         <input
           type="search"
-          name="q"
+          id="search-input"
           placeholder="הקלד מילה..."
           class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
         />
@@ -40,32 +40,239 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
   <!-- Alphabetical Index -->
   <section class="py-8 md:py-12">
     <h2 class="text-2xl font-bold mb-6 text-text">חיפוש לפי אות</h2>
-    <div class="flex flex-wrap gap-2 justify-center">
+    <div id="letter-filter" class="flex flex-wrap gap-2 justify-center">
       {hebrewLetters.map((letter) => (
-        <a
-          href={`/synonyms?letter=${letter}`}
-          class="w-12 h-12 flex items-center justify-center bg-surface border border-border rounded-lg text-xl font-bold hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 transition-all"
+        <button
+          type="button"
+          data-letter={letter}
+          class="letter-btn w-12 h-12 flex items-center justify-center bg-surface border border-border rounded-lg text-xl font-bold hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 transition-all cursor-pointer"
         >
           {letter}
-        </a>
+        </button>
       ))}
     </div>
   </section>
 
+  <!-- Results container -->
+  <section id="results-section" class="py-8 md:py-12 hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h2 id="results-title" class="text-xl font-semibold text-text"></h2>
+      <button id="clear-filter" class="text-brand-600 hover:text-brand-700 underline text-sm">
+        נקה סינון
+      </button>
+    </div>
+    <div id="results-container"></div>
+  </section>
+
+  <!-- Loading state -->
+  <div id="loading" class="hidden py-12 text-center">
+    <div class="inline-block w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+    <p class="mt-4 text-muted">מחפש...</p>
+  </div>
+
   <!-- Popular Words -->
-  {uniqueWords.length > 0 && (
-    <section class="py-8 md:py-12">
-      <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {uniqueWords.slice(0, 24).map((word) => (
-          <a
-            href={`/synonyms/${word}`}
-            class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
-          >
-            <span class="group-hover:text-brand-600 transition-colors">{word}</span>
-          </a>
-        ))}
-      </div>
-    </section>
-  )}
+  <section id="popular-section" class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {uniqueWords.slice(0, 24).map((word) => (
+        <a
+          href={`/synonyms/${word}`}
+          class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
+        >
+          <span class="group-hover:text-brand-600 transition-colors">{word}</span>
+        </a>
+      ))}
+    </div>
+  </section>
 </BaseLayout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  const form = document.getElementById('search-form') as HTMLFormElement;
+  const input = document.getElementById('search-input') as HTMLInputElement;
+  const resultsSection = document.getElementById('results-section')!;
+  const resultsTitle = document.getElementById('results-title')!;
+  const resultsContainer = document.getElementById('results-container')!;
+  const popularSection = document.getElementById('popular-section')!;
+  const loading = document.getElementById('loading')!;
+  const clearBtn = document.getElementById('clear-filter')!;
+  const letterBtns = document.querySelectorAll('.letter-btn');
+
+  function showResults() {
+    resultsSection.classList.remove('hidden');
+    popularSection.classList.add('hidden');
+  }
+
+  function hideResults() {
+    resultsSection.classList.add('hidden');
+    popularSection.classList.remove('hidden');
+    // Remove active state from all letter buttons
+    letterBtns.forEach(btn => btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500'));
+  }
+
+  async function searchByQuery(query: string) {
+    if (!query.trim()) return;
+
+    // Update URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete('letter');
+    url.searchParams.set('q', query);
+    window.history.pushState({}, '', url);
+
+    // Show loading
+    loading.classList.remove('hidden');
+    popularSection.classList.add('hidden');
+    resultsSection.classList.add('hidden');
+
+    try {
+      // Search for words that match
+      const { data: results } = await supabase
+        .from('synonyms')
+        .select('word, synonym, relation_type')
+        .or(`word.ilike.%${query}%,synonym.ilike.%${query}%`)
+        .limit(30);
+
+      // Get unique words from results
+      const uniqueWords = [...new Set(results?.map(r => r.word) || [])];
+
+      loading.classList.add('hidden');
+      showResults();
+      resultsTitle.textContent = `תוצאות עבור "${query}" (${uniqueWords.length} נמצאו)`;
+
+      if (uniqueWords.length > 0) {
+        resultsContainer.innerHTML = `
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            ${uniqueWords.map((word: string) => `
+              <a href="/synonyms/${encodeURIComponent(word)}"
+                 class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md transition-all">
+                <span class="group-hover:text-brand-600 transition-colors">${word}</span>
+              </a>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        resultsContainer.innerHTML = `
+          <div class="bg-brand-50 rounded-xl p-8 text-center border border-brand-100">
+            <p class="text-muted">לא נמצאו מילים נרדפות עבור "${query}"</p>
+            <p class="text-sm mt-2 text-muted">נסה מילה אחרת</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      loading.classList.add('hidden');
+      showResults();
+      resultsTitle.textContent = 'שגיאה בחיפוש';
+      resultsContainer.innerHTML = `
+        <div class="bg-red-50 rounded-xl p-8 text-center border border-red-100">
+          <p class="text-red-600">אירעה שגיאה בחיפוש. נסה שוב.</p>
+        </div>
+      `;
+    }
+  }
+
+  async function filterByLetter(letter: string) {
+    // Update URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete('q');
+    url.searchParams.set('letter', letter);
+    window.history.pushState({}, '', url);
+
+    // Update button states
+    letterBtns.forEach(btn => {
+      if (btn.getAttribute('data-letter') === letter) {
+        btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
+      } else {
+        btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+      }
+    });
+
+    // Show loading
+    loading.classList.remove('hidden');
+    popularSection.classList.add('hidden');
+    resultsSection.classList.add('hidden');
+
+    try {
+      // Get words starting with this letter
+      const { data: results } = await supabase
+        .from('synonyms')
+        .select('word')
+        .ilike('word', `${letter}%`)
+        .limit(50);
+
+      // Get unique words
+      const uniqueWords = [...new Set(results?.map(r => r.word) || [])];
+
+      loading.classList.add('hidden');
+      showResults();
+      resultsTitle.textContent = `מילים המתחילות ב"${letter}" (${uniqueWords.length} נמצאו)`;
+
+      if (uniqueWords.length > 0) {
+        resultsContainer.innerHTML = `
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            ${uniqueWords.map((word: string) => `
+              <a href="/synonyms/${encodeURIComponent(word)}"
+                 class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md transition-all">
+                <span class="group-hover:text-brand-600 transition-colors">${word}</span>
+              </a>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        resultsContainer.innerHTML = `
+          <div class="bg-brand-50 rounded-xl p-8 text-center border border-brand-100">
+            <p class="text-muted">לא נמצאו מילים המתחילות ב"${letter}"</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Filter error:', error);
+      loading.classList.add('hidden');
+      showResults();
+      resultsTitle.textContent = 'שגיאה בסינון';
+      resultsContainer.innerHTML = `
+        <div class="bg-red-50 rounded-xl p-8 text-center border border-red-100">
+          <p class="text-red-600">אירעה שגיאה. נסה שוב.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Handle form submit
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    searchByQuery(input.value);
+  });
+
+  // Handle letter button clicks
+  letterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const letter = btn.getAttribute('data-letter');
+      if (letter) filterByLetter(letter);
+    });
+  });
+
+  // Handle clear button
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    hideResults();
+    window.history.pushState({}, '', '/synonyms');
+  });
+
+  // Check URL for query/letter on page load
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get('q');
+  const initialLetter = urlParams.get('letter');
+
+  if (initialQuery) {
+    input.value = initialQuery;
+    searchByQuery(initialQuery);
+  } else if (initialLetter) {
+    filterByLetter(initialLetter);
+  }
+</script>
