@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabase } from '../lib/supabase';
+
+// Get 5-letter words for Wordle
+const { data: words } = await supabase
+  .from('hebrew_words')
+  .select('word')
+  .eq('letter_count', 5)
+  .limit(100);
+
+const wordList = words?.map(w => w.word) || [];
+---
+
+<BaseLayout title="פותר וורדל בעברית | עזרה למשחק Wordle" description="כלי עזרה לוורדל בעברית - מצא מילים בנות 5 אותיות לפי אותיות ידועות ולא ידועות. רשימת מילים לוורדל.">
+  <section class="text-center py-12 md:py-16">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">פותר וורדל בעברית</h1>
+    <p class="text-muted mb-8">מצא מילים בנות 5 אותיות למשחק וורדל</p>
+
+    <form action="/wordle" method="get" class="max-w-xl mx-auto mb-8">
+      <div class="relative">
+        <input
+          type="search"
+          name="pattern"
+          placeholder="הקלד תבנית (? = אות לא ידועה, לדוגמה: א??ב?)"
+          class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
+        />
+        <button
+          type="submit"
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-accent-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-accent-600 transition-colors shadow-md"
+        >
+          חפש
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Quick access to 5-letter words -->
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">מילים בנות 5 אותיות</h2>
+    <p class="text-muted mb-6">
+      <a href="/words/5-letters" class="text-brand-600 hover:text-brand-700 underline">
+        צפה ברשימה המלאה של מילים בנות 5 אותיות
+      </a>
+    </p>
+
+    {wordList.length > 0 && (
+      <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+        {wordList.slice(0, 40).map((word) => (
+          <span class="p-2 bg-surface border border-border rounded-lg text-center text-sm hover:border-brand-300 transition-all">
+            {word}
+          </span>
+        ))}
+      </div>
+    )}
+  </section>
+
+  <!-- Tips -->
+  <section class="py-8 md:py-12 bg-brand-50 border border-brand-100 rounded-xl p-6 md:p-8">
+    <h2 class="text-xl font-semibold mb-4 text-text">טיפים לוורדל</h2>
+    <ul class="space-y-3 text-muted">
+      <li class="flex items-start gap-2">
+        <span class="text-brand-500">•</span>
+        <span>התחל עם מילה שיש בה הרבה תנועות (א, ה, ו, י)</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-brand-500">•</span>
+        <span>נסה לא לחזור על אותיות שכבר יודע שאינן במילה</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-brand-500">•</span>
+        <span>שים לב לאותיות צהובות - הן במילה אבל במקום אחר</span>
+      </li>
+    </ul>
+  </section>
+</BaseLayout>
