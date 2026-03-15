@@ -52,19 +52,19 @@ const pageDescription = `פתרונות להגדרת התשבץ "${definition?.d
 <BaseLayout title={pageTitle} description={pageDescription}>
   <article>
     <!-- Breadcrumb -->
-    <nav class="text-sm text-text-muted mb-4">
-      <a href="/" class="hover:text-primary">ראשי</a>
-      <span class="mx-2">/</span>
+    <nav class="text-sm text-muted mb-6">
+      <a href="/" class="hover:text-brand-600 transition-colors">ראשי</a>
+      <span class="mx-2 text-border">←</span>
       <span>הגדרות</span>
-      <span class="mx-2">/</span>
+      <span class="mx-2 text-border">←</span>
       <span class="text-text">{definition?.definition_he}</span>
     </nav>
 
     <!-- Title -->
-    <h1 class="text-3xl md:text-4xl font-bold mb-2">
+    <h1 class="text-3xl md:text-4xl font-bold mb-3 text-text">
       {definition?.definition_he}
     </h1>
-    <p class="text-text-muted mb-8">
+    <p class="text-muted mb-8">
       {solutions?.length || 0} פתרונות נמצאו להגדרה זו
     </p>
 
@@ -74,19 +74,19 @@ const pageDescription = `פתרונות להגדרת התשבץ "${definition?.d
         {Object.entries(solutionsByLength)
           .sort(([a], [b]) => Number(a) - Number(b))
           .map(([length, sols]) => (
-            <section class="bg-surface border border-gray-200 rounded-lg p-6">
-              <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                <span class="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">
+            <section class="bg-surface border border-border rounded-xl p-6">
+              <h2 class="text-xl font-semibold mb-4 flex items-center gap-3 text-text">
+                <span class="bg-brand-500 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold">
                   {length}
                 </span>
                 פתרונות של {length} אותיות
               </h2>
               <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {sols.map((sol) => (
-                  <div class="p-3 bg-gray-50 rounded-lg">
-                    <span class="font-semibold text-lg">{sol.solution}</span>
+                  <div class="p-4 bg-brand-50 border border-brand-100 rounded-lg">
+                    <span class="font-semibold text-lg text-brand-700">{sol.solution}</span>
                     {sol.explanation && (
-                      <p class="text-sm text-text-muted mt-1">{sol.explanation}</p>
+                      <p class="text-sm text-muted mt-1">{sol.explanation}</p>
                     )}
                   </div>
                 ))}
@@ -95,22 +95,22 @@ const pageDescription = `פתרונות להגדרת התשבץ "${definition?.d
           ))}
       </div>
     ) : (
-      <div class="bg-gray-50 rounded-lg p-8 text-center">
-        <p class="text-text-muted">לא נמצאו פתרונות להגדרה זו עדיין.</p>
+      <div class="bg-brand-50 border border-brand-100 rounded-xl p-8 text-center">
+        <p class="text-muted">לא נמצאו פתרונות להגדרה זו עדיין.</p>
       </div>
     )}
 
     <!-- Related Definitions -->
     {relatedDefs && relatedDefs.length > 0 && (
       <section class="mt-12">
-        <h2 class="text-2xl font-bold mb-6">הגדרות קשורות</h2>
+        <h2 class="text-2xl font-bold mb-6 text-text">הגדרות קשורות</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           {relatedDefs.map((def) => (
             <a
               href={`/definition/${def.slug}`}
-              class="p-4 bg-surface border border-gray-200 rounded-lg hover:border-primary transition-all"
+              class="group p-4 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
             >
-              {def.definition_he}
+              <span class="group-hover:text-brand-600 transition-colors">{def.definition_he}</span>
             </a>
           ))}
         </div>
@@ -118,8 +118,8 @@ const pageDescription = `פתרונות להגדרת התשבץ "${definition?.d
     )}
 
     <!-- Search CTA -->
-    <section class="mt-12 bg-primary/5 rounded-xl p-8 text-center">
-      <h2 class="text-xl font-semibold mb-4">לא מצאת את מה שחיפשת?</h2>
+    <section class="mt-12 bg-brand-50 border border-brand-100 rounded-xl p-8 text-center">
+      <h2 class="text-xl font-semibold mb-4 text-text">לא מצאת את מה שחיפשת?</h2>
       <SearchBox placeholder="חפש הגדרה אחרת..." />
     </section>
   </article>
