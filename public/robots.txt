@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://matzati.co.il/sitemap.xml
+Sitemap: https://matzati.co.il/sitemap-index.xml
