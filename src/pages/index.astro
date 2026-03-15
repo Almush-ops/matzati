@@ -13,9 +13,20 @@ const { data: definitions } = await supabase
 
 // Word length ranges
 const wordLengths = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Organization schema
+const siteUrl = Astro.site?.toString() || 'https://matzati.co.il';
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'מצאתי',
+  url: siteUrl,
+  description: 'מאגר פתרונות תשבצים, מילים נרדפות וחרוזים בעברית',
+  sameAs: []
+};
 ---
 
-<BaseLayout title="פתרונות תשבצים בעברית | מילים נרדפות וחרוזים" description="מצאתי - מאגר פתרונות תשבצים בעברית. חפש הגדרות, מילים נרדפות, חרוזים ומילים לפי אורך. פותר תשבצים חינם.">
+<BaseLayout title="פתרונות תשבצים בעברית | מילים נרדפות וחרוזים" description="מצאתי - מאגר פתרונות תשבצים בעברית. חפש הגדרות, מילים נרדפות, חרוזים ומילים לפי אורך. פותר תשבצים חינם." schema={organizationSchema}>
   <!-- Hero Section -->
   <section class="text-center py-16 md:py-24 relative overflow-hidden">
     <!-- Decorative background elements -->

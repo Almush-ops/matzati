@@ -1,13 +1,31 @@
 ---
 import '../styles/global.css';
+import SchemaOrg from '../components/SchemaOrg.astro';
 
 interface Props {
   title: string;
   description?: string;
+  schema?: Record<string, any> | Record<string, any>[];
 }
 
-const { title, description = 'מצאתי - פתרונות תשבצים, מילים נרדפות וחרוזים בעברית' } = Astro.props;
+const { title, description = 'מצאתי - פתרונות תשבצים, מילים נרדפות וחרוזים בעברית', schema } = Astro.props;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const siteUrl = Astro.site?.toString() || 'https://matzati.co.il';
+
+// Default WebSite schema
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'מצאתי',
+  url: siteUrl,
+  description: 'מאגר פתרונות תשבצים, מילים נרדפות וחרוזים בעברית',
+  inLanguage: 'he',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${siteUrl}/solver?q={search_term_string}`,
+    'query-input': 'required name=search_term_string'
+  }
+};
 ---
 
 <!doctype html>
@@ -21,6 +39,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>{title} | מצאתי</title>
+    <SchemaOrg schema={websiteSchema} />
+    {schema && <SchemaOrg schema={schema} />}
   </head>
   <body class="bg-background text-text min-h-screen font-sans flex flex-col">
     <header class="bg-surface border-b border-border sticky top-0 z-50">
