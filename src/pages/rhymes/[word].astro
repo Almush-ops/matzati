@@ -26,8 +26,8 @@ const { data: rhymes } = await supabase
 const fullRhymes = rhymes?.filter(r => r.rhyme_type === 'full') || [];
 const partialRhymes = rhymes?.filter(r => r.rhyme_type === 'partial') || [];
 
-const pageTitle = `חרוזים ל"${word}"`;
-const pageDescription = `${rhymes?.length || 0} חרוזים למילה "${word}" בעברית`;
+const pageTitle = `חרוזים ל"${word}" | מילון חרוזים בעברית`;
+const pageDescription = `${rhymes?.length || 0} חרוזים למילה "${word}". חרוזים מלאים וחלקיים לשירים, ברכות וכתיבה יצירתית.`;
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>

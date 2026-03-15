@@ -27,8 +27,8 @@ hebrewLetters.forEach(letter => {
   wordsByLetter[letter] = words?.filter(w => w.first_letter === letter) || [];
 });
 
-const pageTitle = `מילים בנות ${letterCount} אותיות`;
-const pageDescription = `רשימת ${words?.length || 0} מילים בעברית באורך ${letterCount} אותיות`;
+const pageTitle = `מילים בנות ${letterCount} אותיות בעברית | רשימה מלאה`;
+const pageDescription = `${words?.length || 0} מילים בעברית באורך ${letterCount} אותיות. מושלם לתשבצים, וורדל ומשחקי מילים. רשימה מסודרת לפי א-ב.`;
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>

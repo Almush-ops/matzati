@@ -45,8 +45,8 @@ const { data: relatedDefs } = await supabase
   .neq('slug', slug)
   .limit(8);
 
-const pageTitle = `${definition?.definition_he} - פתרון תשבץ`;
-const pageDescription = `פתרונות להגדרת התשבץ "${definition?.definition_he}" - ${solutions?.length || 0} פתרונות לפי מספר אותיות`;
+const pageTitle = `${definition?.definition_he} - פתרון תשבץ | מצאתי`;
+const pageDescription = `${solutions?.length || 0} פתרונות להגדרה "${definition?.definition_he}" בתשבץ. צפה בפתרונות לפי מספר אותיות ומצא את המילה המתאימה.`;
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>

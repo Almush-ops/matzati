@@ -28,8 +28,8 @@ const { data: antonyms } = await supabase
   .select('word')
   .eq('synonym', word);
 
-const pageTitle = `מילים נרדפות ל"${word}"`;
-const pageDescription = `${synonyms?.length || 0} מילים נרדפות למילה "${word}" בעברית`;
+const pageTitle = `מילים נרדפות ל"${word}" | סינונימים בעברית`;
+const pageDescription = `${synonyms?.length || 0} מילים נרדפות למילה "${word}". גלה סינונימים ומילים קשורות לשימוש בכתיבה ותשבצים.`;
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>

@@ -11,7 +11,7 @@ const { data: rhymeWords } = await supabase
 const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
 ---
 
-<BaseLayout title="חרוזים בעברית" description="מילון חרוזים בעברית - מצא חרוז לכל מילה">
+<BaseLayout title="חרוזים בעברית | מילון חרוזים לשירים וברכות" description="מילון חרוזים בעברית - מצא חרוזים מלאים וחלקיים לכל מילה. מושלם לכתיבת שירים, ברכות וטקסטים יצירתיים.">
   <section class="text-center py-12 md:py-16">
     <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">חרוזים בעברית</h1>
     <p class="text-muted mb-8">מצא חרוז לכל מילה - לשירים, ברכות ועוד</p>
