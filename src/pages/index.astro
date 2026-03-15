@@ -17,21 +17,27 @@ const wordLengths = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 <BaseLayout title="פתרונות תשבצים, מילים נרדפות וחרוזים">
   <!-- Hero Section -->
-  <section class="text-center py-12">
-    <h1 class="text-4xl md:text-5xl font-bold mb-4">
-      מצאתי - פתרונות תשבצים בעברית
-    </h1>
-    <p class="text-xl text-muted mb-8">
-      חפש פתרונות להגדרות, מילים נרדפות, חרוזים ועוד
-    </p>
-    <SearchBox />
+  <section class="text-center py-16 md:py-24 relative overflow-hidden">
+    <!-- Decorative background elements -->
+    <div class="absolute top-0 start-1/4 w-64 h-64 bg-brand-100 rounded-full blur-3xl opacity-50"></div>
+    <div class="absolute bottom-0 end-1/4 w-48 h-48 bg-accent-400 rounded-full blur-3xl opacity-20"></div>
+
+    <div class="relative z-10">
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-text">
+        מצאתי - פתרונות תשבצים בעברית
+      </h1>
+      <p class="text-xl md:text-2xl text-muted mb-10 max-w-2xl mx-auto">
+        חפש פתרונות להגדרות, מילים נרדפות, חרוזים ועוד
+      </p>
+      <SearchBox />
+    </div>
   </section>
 
   <!-- Popular Definitions -->
   {definitions && definitions.length > 0 && (
-    <section class="py-8">
-      <h2 class="text-2xl font-bold mb-6">הגדרות פופולריות</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <section class="py-12 md:py-16">
+      <h2 class="text-2xl md:text-3xl font-bold mb-8 text-text">הגדרות פופולריות</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
         {definitions.map((def) => (
           <DefinitionCard
             slug={def.slug}
@@ -43,44 +49,46 @@ const wordLengths = [2, 3, 4, 5, 6, 7, 8, 9, 10];
   )}
 
   <!-- Words by Length -->
-  <section class="py-8">
-    <h2 class="text-2xl font-bold mb-6">מילים לפי אורך</h2>
-    <div class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
-      {wordLengths.map((n) => (
-        <a
-          href={`/words/${n}-letters`}
-          class="p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-400 hover:shadow-md transition-all"
-        >
-          <span class="text-3xl font-bold text-brand-600">{n}</span>
-          <span class="block text-sm text-muted mt-1">אותיות</span>
-        </a>
-      ))}
+  <section class="py-12 md:py-16 bg-brand-50 -mx-4 px-4 md:-mx-8 md:px-8">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-2xl md:text-3xl font-bold mb-8 text-text">מילים לפי אורך</h2>
+      <div class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3 md:gap-4">
+        {wordLengths.map((n) => (
+          <a
+            href={`/words/${n}-letters`}
+            class="group p-4 md:p-5 bg-surface border border-border rounded-xl text-center hover:border-brand-400 hover:shadow-lg hover:shadow-brand-500/10 transition-all"
+          >
+            <span class="text-3xl md:text-4xl font-bold text-brand-600 group-hover:text-brand-700 transition-colors">{n}</span>
+            <span class="block text-sm text-muted mt-1">אותיות</span>
+          </a>
+        ))}
+      </div>
     </div>
   </section>
 
   <!-- Categories -->
-  <section class="py-8">
-    <h2 class="text-2xl font-bold mb-6">קטגוריות</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <a href="/solver" class="p-6 bg-brand-50 border border-brand-200 rounded-xl text-center hover:bg-brand-100 hover:border-brand-300 transition-all">
-        <span class="text-4xl">&#129513;</span>
-        <span class="block text-lg font-semibold mt-2">פותר תשבצים</span>
-        <span class="block text-sm text-muted">חיפוש לפי הגדרה או תבנית</span>
+  <section class="py-12 md:py-16">
+    <h2 class="text-2xl md:text-3xl font-bold mb-8 text-text">קטגוריות</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+      <a href="/solver" class="group p-6 md:p-8 bg-brand-50 border border-brand-200 rounded-xl text-center hover:bg-brand-100 hover:border-brand-400 hover:shadow-lg hover:shadow-brand-500/10 transition-all">
+        <span class="text-4xl md:text-5xl block mb-3">&#129513;</span>
+        <span class="block text-lg font-semibold text-text group-hover:text-brand-700 transition-colors">פותר תשבצים</span>
+        <span class="block text-sm text-muted mt-1">חיפוש לפי הגדרה או תבנית</span>
       </a>
-      <a href="/synonyms" class="p-6 bg-accent-500/10 border border-accent-500/20 rounded-xl text-center hover:bg-accent-500/20 transition-all">
-        <span class="text-4xl">&#128218;</span>
-        <span class="block text-lg font-semibold mt-2">מילים נרדפות</span>
-        <span class="block text-sm text-muted">מצא מילה נרדפת</span>
+      <a href="/synonyms" class="group p-6 md:p-8 bg-accent-500/10 border border-accent-500/20 rounded-xl text-center hover:bg-accent-500/20 hover:border-accent-500/40 hover:shadow-lg hover:shadow-accent-500/10 transition-all">
+        <span class="text-4xl md:text-5xl block mb-3">&#128218;</span>
+        <span class="block text-lg font-semibold text-text group-hover:text-accent-600 transition-colors">מילים נרדפות</span>
+        <span class="block text-sm text-muted mt-1">מצא מילה נרדפת</span>
       </a>
-      <a href="/rhymes" class="p-6 bg-brand-100 border border-brand-200 rounded-xl text-center hover:bg-brand-200 hover:border-brand-300 transition-all">
-        <span class="text-4xl">&#127925;</span>
-        <span class="block text-lg font-semibold mt-2">חרוזים</span>
-        <span class="block text-sm text-muted">מצא חרוז למילה</span>
+      <a href="/rhymes" class="group p-6 md:p-8 bg-brand-100 border border-brand-200 rounded-xl text-center hover:bg-brand-200 hover:border-brand-400 hover:shadow-lg hover:shadow-brand-500/10 transition-all">
+        <span class="text-4xl md:text-5xl block mb-3">&#127925;</span>
+        <span class="block text-lg font-semibold text-text group-hover:text-brand-700 transition-colors">חרוזים</span>
+        <span class="block text-sm text-muted mt-1">מצא חרוז למילה</span>
       </a>
-      <a href="/wordle" class="p-6 bg-brand-50 border border-brand-200 rounded-xl text-center hover:bg-brand-100 hover:border-brand-300 transition-all">
-        <span class="text-4xl">&#127919;</span>
-        <span class="block text-lg font-semibold mt-2">פותר וורדל</span>
-        <span class="block text-sm text-muted">עזרה במשחק וורדל</span>
+      <a href="/wordle" class="group p-6 md:p-8 bg-brand-50 border border-brand-200 rounded-xl text-center hover:bg-brand-100 hover:border-brand-400 hover:shadow-lg hover:shadow-brand-500/10 transition-all">
+        <span class="text-4xl md:text-5xl block mb-3">&#127919;</span>
+        <span class="block text-lg font-semibold text-text group-hover:text-brand-700 transition-colors">פותר וורדל</span>
+        <span class="block text-sm text-muted mt-1">עזרה במשחק וורדל</span>
       </a>
     </div>
   </section>

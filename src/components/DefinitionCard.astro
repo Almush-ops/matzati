@@ -10,10 +10,10 @@ const { slug, definition, solutionCount } = Astro.props;
 
 <a
   href={`/definition/${slug}`}
-  class="block p-4 bg-surface border border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all"
+  class="group block p-4 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
 >
-  <h3 class="font-semibold text-lg text-text">{definition}</h3>
+  <h3 class="font-semibold text-lg text-text group-hover:text-brand-600 transition-colors">{definition}</h3>
   {solutionCount && (
-    <p class="text-sm text-text-muted mt-1">{solutionCount} פתרונות</p>
+    <p class="text-sm text-muted mt-1">{solutionCount} פתרונות</p>
   )}
 </a>
