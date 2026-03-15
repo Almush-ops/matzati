@@ -22,32 +22,71 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>{title} | מצאתי</title>
   </head>
-  <body class="bg-background text-text min-h-screen font-sans">
-    <header class="bg-surface border-b border-border">
+  <body class="bg-background text-text min-h-screen font-sans flex flex-col">
+    <header class="bg-surface border-b border-border sticky top-0 z-50">
       <nav class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-        <a href="/" class="text-2xl font-bold text-brand-600">מצאתי</a>
-        <div class="flex gap-6">
-          <a href="/solver" class="hover:text-brand-600 transition-colors">פותר תשבצים</a>
-          <a href="/synonyms" class="hover:text-brand-600 transition-colors">מילים נרדפות</a>
-          <a href="/rhymes" class="hover:text-brand-600 transition-colors">חרוזים</a>
-          <a href="/words" class="hover:text-brand-600 transition-colors">מילים</a>
+        <a href="/" class="text-2xl font-bold text-brand-600 hover:text-brand-700 transition-colors">מצאתי</a>
+
+        <!-- Desktop nav -->
+        <div class="hidden md:flex gap-6">
+          <a href="/solver" class="text-text hover:text-brand-600 transition-colors">פותר תשבצים</a>
+          <a href="/synonyms" class="text-text hover:text-brand-600 transition-colors">מילים נרדפות</a>
+          <a href="/rhymes" class="text-text hover:text-brand-600 transition-colors">חרוזים</a>
+          <a href="/words" class="text-text hover:text-brand-600 transition-colors">מילים</a>
         </div>
+
+        <!-- Mobile menu button -->
+        <button id="mobile-menu-btn" class="md:hidden p-2 text-text hover:text-brand-600 transition-colors" aria-label="תפריט">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
       </nav>
+
+      <!-- Mobile nav -->
+      <div id="mobile-menu" class="hidden md:hidden border-t border-border bg-surface">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-4">
+          <a href="/solver" class="text-text hover:text-brand-600 transition-colors py-2">פותר תשבצים</a>
+          <a href="/synonyms" class="text-text hover:text-brand-600 transition-colors py-2">מילים נרדפות</a>
+          <a href="/rhymes" class="text-text hover:text-brand-600 transition-colors py-2">חרוזים</a>
+          <a href="/words" class="text-text hover:text-brand-600 transition-colors py-2">מילים</a>
+        </div>
+      </div>
     </header>
+
+    <script>
+      const btn = document.getElementById('mobile-menu-btn');
+      const menu = document.getElementById('mobile-menu');
+      btn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
+    </script>
 
     <main class="max-w-6xl mx-auto px-4 py-8">
       <slot />
     </main>
 
     <footer class="bg-surface border-t border-border mt-auto">
-      <div class="max-w-6xl mx-auto px-4 py-6 text-center text-muted text-sm">
-        <p>&copy; {new Date().getFullYear()} מצאתי - פתרונות תשבצים בעברית</p>
-        <div class="flex justify-center gap-4 mt-2">
-          <a href="/about" class="hover:text-brand-600">אודות</a>
-          <a href="/terms" class="hover:text-brand-600">תנאי שימוש</a>
-          <a href="/privacy" class="hover:text-brand-600">פרטיות</a>
-          <a href="/accessibility" class="hover:text-brand-600">נגישות</a>
+      <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Footer nav -->
+        <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6">
+          <a href="/solver" class="text-muted hover:text-brand-600 transition-colors">פותר תשבצים</a>
+          <a href="/synonyms" class="text-muted hover:text-brand-600 transition-colors">מילים נרדפות</a>
+          <a href="/rhymes" class="text-muted hover:text-brand-600 transition-colors">חרוזים</a>
+          <a href="/words" class="text-muted hover:text-brand-600 transition-colors">מילים</a>
         </div>
+
+        <!-- Legal links -->
+        <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm mb-4">
+          <a href="/terms" class="text-muted hover:text-brand-600 transition-colors">תנאי שימוש</a>
+          <span class="text-border">|</span>
+          <a href="/privacy" class="text-muted hover:text-brand-600 transition-colors">מדיניות פרטיות</a>
+          <span class="text-border">|</span>
+          <a href="/accessibility" class="text-muted hover:text-brand-600 transition-colors">הצהרת נגישות</a>
+        </div>
+
+        <!-- Copyright -->
+        <p class="text-center text-muted text-sm">
+          &copy; {new Date().getFullYear()} מצאתי - פתרונות תשבצים בעברית
+        </p>
       </div>
     </footer>
   </body>

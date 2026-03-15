@@ -25,12 +25,13 @@
   --color-background: #FAFAFA;
   --color-surface: #FFFFFF;
   --color-text: #1F2937;
-  --color-text-muted: #6B7280;
+  --color-muted: #6B7280;
   --color-border: #E5E7EB;
 
   /* Aliases for compatibility */
   --color-primary: var(--color-brand-500);
   --color-primary-dark: var(--color-brand-600);
+  --color-text-muted: var(--color-muted);
 }
 
 /* RTL Support */
