@@ -19,18 +19,18 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <link rel="canonical" href={canonicalURL} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>{title} | מצאתי</title>
   </head>
   <body class="bg-background text-text min-h-screen font-sans">
-    <header class="bg-surface border-b border-gray-200">
+    <header class="bg-surface border-b border-border">
       <nav class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-        <a href="/" class="text-2xl font-bold text-primary">מצאתי</a>
+        <a href="/" class="text-2xl font-bold text-brand-600">מצאתי</a>
         <div class="flex gap-6">
-          <a href="/solver" class="hover:text-primary transition-colors">פותר תשבצים</a>
-          <a href="/synonyms" class="hover:text-primary transition-colors">מילים נרדפות</a>
-          <a href="/rhymes" class="hover:text-primary transition-colors">חרוזים</a>
-          <a href="/words" class="hover:text-primary transition-colors">מילים</a>
+          <a href="/solver" class="hover:text-brand-600 transition-colors">פותר תשבצים</a>
+          <a href="/synonyms" class="hover:text-brand-600 transition-colors">מילים נרדפות</a>
+          <a href="/rhymes" class="hover:text-brand-600 transition-colors">חרוזים</a>
+          <a href="/words" class="hover:text-brand-600 transition-colors">מילים</a>
         </div>
       </nav>
     </header>
@@ -39,14 +39,14 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       <slot />
     </main>
 
-    <footer class="bg-surface border-t border-gray-200 mt-auto">
-      <div class="max-w-6xl mx-auto px-4 py-6 text-center text-text-muted text-sm">
+    <footer class="bg-surface border-t border-border mt-auto">
+      <div class="max-w-6xl mx-auto px-4 py-6 text-center text-muted text-sm">
         <p>&copy; {new Date().getFullYear()} מצאתי - פתרונות תשבצים בעברית</p>
         <div class="flex justify-center gap-4 mt-2">
-          <a href="/about" class="hover:text-primary">אודות</a>
-          <a href="/terms" class="hover:text-primary">תנאי שימוש</a>
-          <a href="/privacy" class="hover:text-primary">פרטיות</a>
-          <a href="/accessibility" class="hover:text-primary">נגישות</a>
+          <a href="/about" class="hover:text-brand-600">אודות</a>
+          <a href="/terms" class="hover:text-brand-600">תנאי שימוש</a>
+          <a href="/privacy" class="hover:text-brand-600">פרטיות</a>
+          <a href="/accessibility" class="hover:text-brand-600">נגישות</a>
         </div>
       </div>
     </footer>

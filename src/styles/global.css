@@ -1,16 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  --font-family-sans: "Heebo", "Assistant", system-ui, sans-serif;
+  /* Typography */
+  --font-family-sans: "Rubik", system-ui, sans-serif;
 
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  --color-secondary: #64748b;
-  --color-accent: #f59e0b;
-  --color-background: #f8fafc;
-  --color-surface: #ffffff;
-  --color-text: #1e293b;
-  --color-text-muted: #64748b;
+  /* Brand Colors - Indigo */
+  --color-brand-50: #EEEDFC;
+  --color-brand-100: #D4D2F9;
+  --color-brand-200: #B3AFF4;
+  --color-brand-300: #918BEE;
+  --color-brand-400: #7269E8;
+  --color-brand-500: #5046E5;
+  --color-brand-600: #4038C7;
+  --color-brand-700: #312BA8;
+  --color-brand-800: #231F89;
+  --color-brand-900: #16136A;
+
+  /* Accent Colors - Amber */
+  --color-accent-400: #FBBF24;
+  --color-accent-500: #F59E0B;
+  --color-accent-600: #D97706;
+
+  /* Semantic Colors */
+  --color-background: #FAFAFA;
+  --color-surface: #FFFFFF;
+  --color-text: #1F2937;
+  --color-text-muted: #6B7280;
+  --color-border: #E5E7EB;
+
+  /* Aliases for compatibility */
+  --color-primary: var(--color-brand-500);
+  --color-primary-dark: var(--color-brand-600);
 }
 
 /* RTL Support */
@@ -20,7 +40,7 @@ html {
 
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
 }
 
@@ -31,6 +51,47 @@ html {
 
 /* Selection color */
 ::selection {
-  background-color: var(--color-primary);
+  background-color: var(--color-brand-500);
   color: white;
+}
+
+/* Word badges */
+.word-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: var(--color-brand-50);
+  color: var(--color-brand-700);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Letter navigation */
+.letter-nav {
+  display: inline-flex;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+.letter-nav:hover {
+  border-color: var(--color-brand-300);
+}
+
+.letter-nav.active {
+  background: var(--color-brand-500);
+  color: white;
+  border-color: var(--color-brand-500);
+}
+
+/* Ad slot placeholder */
+.ad-slot {
+  min-height: 250px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
 }
