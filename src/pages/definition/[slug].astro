@@ -5,15 +5,35 @@ import SearchBox from '../../components/SearchBox.astro';
 import { supabase } from '../../lib/supabase';
 
 export async function getStaticPaths() {
-  // Fetch ALL definitions - Supabase default limit is 1000, we need all 5000+
-  const { data: definitions } = await supabase
-    .from('crossword_definitions')
-    .select('slug')
-    .range(0, 9999);
+  // Supabase limits to 1000 rows per request - use pagination to get all 5000+
+  const allDefinitions: { slug: string }[] = [];
+  const pageSize = 1000;
+  let page = 0;
+  let hasMore = true;
 
-  return definitions?.map((def) => ({
+  while (hasMore) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data } = await supabase
+      .from('crossword_definitions')
+      .select('slug')
+      .range(from, to);
+
+    if (data && data.length > 0) {
+      allDefinitions.push(...data);
+      hasMore = data.length === pageSize;
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  console.log(`[getStaticPaths] Fetched ${allDefinitions.length} definitions`);
+
+  return allDefinitions.map((def) => ({
     params: { slug: def.slug },
-  })) || [];
+  }));
 }
 
 const { slug } = Astro.params;
