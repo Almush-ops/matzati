@@ -15,9 +15,9 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
 ---
 
 <BaseLayout title="מילים נרדפות בעברית" description="מילון מילים נרדפות בעברית - מצא סינונימים לכל מילה">
-  <section class="text-center py-8">
-    <h1 class="text-3xl md:text-4xl font-bold mb-4">מילים נרדפות בעברית</h1>
-    <p class="text-text-muted mb-8">מצא מילה נרדפת לכל מילה בעברית</p>
+  <section class="text-center py-12 md:py-16">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">מילים נרדפות בעברית</h1>
+    <p class="text-muted mb-8">מצא מילה נרדפת לכל מילה בעברית</p>
 
     <form action="/synonyms" method="get" class="max-w-xl mx-auto mb-8">
       <div class="relative">
@@ -25,11 +25,11 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
           type="search"
           name="q"
           placeholder="הקלד מילה..."
-          class="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-full focus:border-primary outline-none"
+          class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
         />
         <button
           type="submit"
-          class="absolute left-2 top-1/2 -translate-y-1/2 bg-primary text-white px-6 py-2 rounded-full"
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-accent-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-accent-600 transition-colors shadow-md"
         >
           חפש
         </button>
@@ -38,13 +38,13 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
   </section>
 
   <!-- Alphabetical Index -->
-  <section class="py-8">
-    <h2 class="text-2xl font-bold mb-6">חיפוש לפי אות</h2>
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">חיפוש לפי אות</h2>
     <div class="flex flex-wrap gap-2 justify-center">
       {hebrewLetters.map((letter) => (
         <a
           href={`/synonyms?letter=${letter}`}
-          class="w-12 h-12 flex items-center justify-center bg-surface border border-gray-200 rounded-lg text-xl font-bold hover:border-primary hover:bg-primary/5 transition-all"
+          class="w-12 h-12 flex items-center justify-center bg-surface border border-border rounded-lg text-xl font-bold hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 transition-all"
         >
           {letter}
         </a>
@@ -54,15 +54,15 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
 
   <!-- Popular Words -->
   {uniqueWords.length > 0 && (
-    <section class="py-8">
-      <h2 class="text-2xl font-bold mb-6">מילים פופולריות</h2>
+    <section class="py-8 md:py-12">
+      <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {uniqueWords.slice(0, 24).map((word) => (
           <a
             href={`/synonyms/${word}`}
-            class="p-4 bg-surface border border-gray-200 rounded-lg text-center hover:border-primary transition-all"
+            class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
           >
-            {word}
+            <span class="group-hover:text-brand-600 transition-colors">{word}</span>
           </a>
         ))}
       </div>
