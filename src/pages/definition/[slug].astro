@@ -5,9 +5,11 @@ import SearchBox from '../../components/SearchBox.astro';
 import { supabase } from '../../lib/supabase';
 
 export async function getStaticPaths() {
+  // Fetch ALL definitions - Supabase default limit is 1000, we need all 5000+
   const { data: definitions } = await supabase
     .from('crossword_definitions')
-    .select('slug');
+    .select('slug')
+    .range(0, 9999);
 
   return definitions?.map((def) => ({
     params: { slug: def.slug },
