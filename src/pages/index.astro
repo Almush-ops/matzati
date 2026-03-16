@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SearchBox from '../components/SearchBox.astro';
+import SearchAutocomplete from '../components/SearchAutocomplete.astro';
 import DefinitionCard from '../components/DefinitionCard.astro';
 import { supabase } from '../lib/supabase';
 
@@ -10,6 +10,15 @@ const { data: definitions } = await supabase
   .select('slug, definition_he')
   .order('search_count', { ascending: false })
   .limit(12);
+
+// Fetch counts for stats
+const { count: definitionCount } = await supabase
+  .from('crossword_definitions')
+  .select('*', { count: 'exact', head: true });
+
+const { count: solutionCount } = await supabase
+  .from('crossword_solutions')
+  .select('*', { count: 'exact', head: true });
 
 // Word length ranges
 const wordLengths = [2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -37,10 +46,15 @@ const organizationSchema = {
       <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-text">
         מצאתי - פתרונות תשבצים בעברית
       </h1>
-      <p class="text-xl md:text-2xl text-muted mb-10 max-w-2xl mx-auto">
+      <p class="text-xl md:text-2xl text-muted mb-8 max-w-2xl mx-auto">
         חפש פתרונות להגדרות, מילים נרדפות, חרוזים ועוד
       </p>
-      <SearchBox />
+      <SearchAutocomplete />
+      <p class="text-sm text-muted mt-6">
+        <span class="font-semibold text-brand-600">{definitionCount?.toLocaleString('he-IL')}</span> הגדרות
+        <span class="mx-2">•</span>
+        <span class="font-semibold text-brand-600">{solutionCount?.toLocaleString('he-IL')}</span> פתרונות
+      </p>
     </div>
   </section>
 

@@ -1,7 +1,7 @@
 ---
 // Build: 2026-03-15 v4 - 5001 definitions, 2420 solutions, 94 categories
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import SearchBox from '../../components/SearchBox.astro';
+import SearchAutocomplete from '../../components/SearchAutocomplete.astro';
 import { supabase } from '../../lib/supabase';
 
 export async function getStaticPaths() {
@@ -67,7 +67,7 @@ const { data: relatedDefs } = await supabase
   .neq('slug', slug)
   .limit(8);
 
-const pageTitle = `${definition?.definition_he} - פתרון תשבץ | מצאתי`;
+const pageTitle = `${definition?.definition_he} - פתרון תשבץ`;
 const pageDescription = `${solutions?.length || 0} פתרונות להגדרה "${definition?.definition_he}" בתשבץ. צפה בפתרונות לפי מספר אותיות ומצא את המילה המתאימה.`;
 
 // Schema markup
@@ -169,7 +169,7 @@ const pageSchema = [breadcrumbSchema, definitionSchema];
     <!-- Search CTA -->
     <section class="mt-12 bg-brand-50 border border-brand-100 rounded-xl p-8 text-center">
       <h2 class="text-xl font-semibold mb-4 text-text">לא מצאת את מה שחיפשת?</h2>
-      <SearchBox placeholder="חפש הגדרה אחרת..." />
+      <SearchAutocomplete placeholder="חפש הגדרה אחרת..." />
     </section>
   </article>
 </BaseLayout>

@@ -1,0 +1,224 @@
+---
+interface Props {
+  placeholder?: string;
+  action?: string;
+}
+
+const { placeholder = 'חפש הגדרה, מילה או חרוז...', action = '/solver' } = Astro.props;
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+---
+
+<div class="search-autocomplete w-full max-w-2xl mx-auto relative">
+  <form action={action} method="get" class="relative">
+    <input
+      type="search"
+      name="q"
+      id="search-input"
+      placeholder={placeholder}
+      autocomplete="off"
+      class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
+    />
+    <button
+      type="submit"
+      class="absolute left-2 top-1/2 -translate-y-1/2 bg-accent-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-accent-600 transition-colors shadow-md hover:shadow-lg"
+    >
+      חפש
+    </button>
+  </form>
+
+  <!-- Autocomplete dropdown -->
+  <div
+    id="autocomplete-dropdown"
+    class="hidden absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto"
+  >
+    <!-- Recent searches -->
+    <div id="recent-searches" class="hidden">
+      <div class="px-4 py-2 text-sm text-muted border-b border-border">חיפושים אחרונים</div>
+      <div id="recent-list"></div>
+    </div>
+
+    <!-- Suggestions -->
+    <div id="suggestions-list"></div>
+
+    <!-- Loading state -->
+    <div id="loading-state" class="hidden px-4 py-3 text-muted text-center">
+      מחפש...
+    </div>
+
+    <!-- No results -->
+    <div id="no-results" class="hidden px-4 py-3 text-muted text-center">
+      לא נמצאו תוצאות. נסה מילה אחרת.
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ supabaseUrl, supabaseAnonKey }}>
+  const input = document.getElementById('search-input');
+  const dropdown = document.getElementById('autocomplete-dropdown');
+  const suggestionsList = document.getElementById('suggestions-list');
+  const recentSearches = document.getElementById('recent-searches');
+  const recentList = document.getElementById('recent-list');
+  const loadingState = document.getElementById('loading-state');
+  const noResults = document.getElementById('no-results');
+
+  let debounceTimer;
+  const RECENT_KEY = 'matzati_recent_searches';
+  const MAX_RECENT = 5;
+
+  // Load recent searches from localStorage
+  function getRecentSearches() {
+    try {
+      return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  // Save search to recent
+  function saveToRecent(query) {
+    const recent = getRecentSearches().filter(s => s !== query);
+    recent.unshift(query);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
+  }
+
+  // Render recent searches
+  function renderRecent() {
+    const recent = getRecentSearches();
+    if (recent.length === 0) {
+      recentSearches.classList.add('hidden');
+      return;
+    }
+
+    recentSearches.classList.remove('hidden');
+    recentList.innerHTML = recent.map(s => `
+      <a href="/solver?q=${encodeURIComponent(s)}" class="block px-4 py-2 hover:bg-brand-50 transition-colors">
+        <span class="text-muted ml-2">🕐</span>${s}
+      </a>
+    `).join('');
+  }
+
+  // Fetch suggestions from Supabase
+  async function fetchSuggestions(query) {
+    if (query.length < 2) return [];
+
+    try {
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/crossword_definitions?definition_he=ilike.*${encodeURIComponent(query)}*&select=slug,definition_he&limit=8&order=search_count.desc`,
+        {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${supabaseAnonKey}`
+          }
+        }
+      );
+
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  }
+
+  // Render suggestions
+  function renderSuggestions(suggestions) {
+    if (suggestions.length === 0) {
+      suggestionsList.innerHTML = '';
+      noResults.classList.remove('hidden');
+      return;
+    }
+
+    noResults.classList.add('hidden');
+    suggestionsList.innerHTML = suggestions.map(s => `
+      <a href="/definition/${s.slug}" class="block px-4 py-3 hover:bg-brand-50 transition-colors border-b border-border last:border-0">
+        <span class="font-medium">${s.definition_he}</span>
+      </a>
+    `).join('');
+  }
+
+  // Handle input
+  input?.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+
+    clearTimeout(debounceTimer);
+
+    if (query.length === 0) {
+      // Show recent searches when empty
+      dropdown.classList.remove('hidden');
+      suggestionsList.innerHTML = '';
+      noResults.classList.add('hidden');
+      loadingState.classList.add('hidden');
+      renderRecent();
+      return;
+    }
+
+    if (query.length < 2) {
+      dropdown.classList.add('hidden');
+      return;
+    }
+
+    // Show loading
+    dropdown.classList.remove('hidden');
+    recentSearches.classList.add('hidden');
+    noResults.classList.add('hidden');
+    loadingState.classList.remove('hidden');
+    suggestionsList.innerHTML = '';
+
+    // Debounce API call
+    debounceTimer = setTimeout(async () => {
+      const suggestions = await fetchSuggestions(query);
+      loadingState.classList.add('hidden');
+      renderSuggestions(suggestions);
+    }, 200);
+  });
+
+  // Show dropdown on focus
+  input?.addEventListener('focus', () => {
+    if (input.value.length === 0) {
+      dropdown.classList.remove('hidden');
+      renderRecent();
+    } else if (input.value.length >= 2) {
+      dropdown.classList.remove('hidden');
+    }
+  });
+
+  // Hide dropdown on click outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-autocomplete')) {
+      dropdown.classList.add('hidden');
+    }
+  });
+
+  // Save to recent on form submit
+  input?.closest('form')?.addEventListener('submit', () => {
+    const query = input.value.trim();
+    if (query.length > 0) {
+      saveToRecent(query);
+    }
+  });
+
+  // Keyboard navigation
+  input?.addEventListener('keydown', (e) => {
+    const links = dropdown.querySelectorAll('a');
+    if (links.length === 0) return;
+
+    const current = dropdown.querySelector('a:focus');
+    let index = Array.from(links).indexOf(current);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      index = Math.min(index + 1, links.length - 1);
+      links[index]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (index <= 0) {
+        input.focus();
+      } else {
+        links[index - 1]?.focus();
+      }
+    } else if (e.key === 'Escape') {
+      dropdown.classList.add('hidden');
+      input.focus();
+    }
+  });
+</script>
