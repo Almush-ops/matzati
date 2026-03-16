@@ -1,4 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="24" fill="#6366f1"/>
-  <text x="64" y="92" text-anchor="middle" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="white">מ</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#5046E5"/>
+  <!-- Grid cells 3x3 -->
+  <rect x="3" y="3" width="7" height="7" fill="white"/>
+  <rect x="12.5" y="3" width="7" height="7" fill="#F59E0B"/>
+  <rect x="22" y="3" width="7" height="7" fill="white"/>
+  <rect x="3" y="12.5" width="7" height="7" fill="#F59E0B"/>
+  <rect x="12.5" y="12.5" width="7" height="7" fill="white"/>
+  <rect x="22" y="12.5" width="7" height="7" fill="#F59E0B"/>
+  <rect x="3" y="22" width="7" height="7" fill="white"/>
+  <rect x="12.5" y="22" width="7" height="7" fill="#F59E0B"/>
+  <rect x="22" y="22" width="7" height="7" fill="white"/>
 </svg>

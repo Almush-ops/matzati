@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50">
+  <!-- Crossword grid icon -->
+  <g transform="translate(5, 8)">
+    <!-- Grid background -->
+    <rect x="0" y="0" width="34" height="34" rx="4" fill="#5046E5"/>
+    <!-- Grid cells -->
+    <rect x="3" y="3" width="8" height="8" fill="white"/>
+    <rect x="13" y="3" width="8" height="8" fill="#F59E0B"/>
+    <rect x="23" y="3" width="8" height="8" fill="white"/>
+    <rect x="3" y="13" width="8" height="8" fill="#F59E0B"/>
+    <rect x="13" y="13" width="8" height="8" fill="white"/>
+    <rect x="23" y="13" width="8" height="8" fill="#F59E0B"/>
+    <rect x="3" y="23" width="8" height="8" fill="white"/>
+    <rect x="13" y="23" width="8" height="8" fill="#F59E0B"/>
+    <rect x="23" y="23" width="8" height="8" fill="white"/>
+  </g>
+  <!-- Text "מצאתי" -->
+  <text x="48" y="35" font-family="Rubik, Arial, sans-serif" font-weight="600" font-size="28" fill="#5046E5">מצאתי</text>
+</svg>
