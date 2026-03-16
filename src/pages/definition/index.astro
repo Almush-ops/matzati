@@ -1,0 +1,88 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SearchAutocomplete from '../../components/SearchAutocomplete.astro';
+import { supabase } from '../../lib/supabase';
+
+// Fetch popular definitions (most searched)
+const { data: popularDefs } = await supabase
+  .from('crossword_definitions')
+  .select('slug, definition_he')
+  .order('search_count', { ascending: false })
+  .limit(24);
+
+// Fetch recent definitions
+const { data: recentDefs } = await supabase
+  .from('crossword_definitions')
+  .select('slug, definition_he')
+  .order('created_at', { ascending: false })
+  .limit(12);
+
+// Count total
+const { count: totalCount } = await supabase
+  .from('crossword_definitions')
+  .select('*', { count: 'exact', head: true });
+
+const pageTitle = 'הגדרות תשבץ - מאגר פתרונות';
+const pageDescription = `מאגר של ${totalCount?.toLocaleString('he-IL')} הגדרות תשבץ עם פתרונות. חפש לפי הגדרה ומצא את הפתרון המתאים.`;
+
+const siteUrl = Astro.site?.toString() || 'https://matzati.co.il';
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'ראשי', item: siteUrl },
+    { '@type': 'ListItem', position: 2, name: 'הגדרות תשבץ' }
+  ]
+};
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} schema={breadcrumbSchema}>
+  <section class="text-center py-12 md:py-16">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">הגדרות תשבץ</h1>
+    <p class="text-lg text-muted mb-8">
+      מאגר של {totalCount?.toLocaleString('he-IL')} הגדרות עם פתרונות
+    </p>
+    <SearchAutocomplete placeholder="חפש הגדרה..." />
+  </section>
+
+  {popularDefs && popularDefs.length > 0 && (
+    <section class="py-8">
+      <h2 class="text-2xl font-bold mb-6 text-text">הגדרות פופולריות</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {popularDefs.map((def) => (
+          <a
+            href={`/definition/${def.slug}`}
+            class="group p-4 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
+          >
+            <span class="group-hover:text-brand-600 transition-colors">{def.definition_he}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {recentDefs && recentDefs.length > 0 && (
+    <section class="py-8">
+      <h2 class="text-2xl font-bold mb-6 text-text">הגדרות אחרונות</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {recentDefs.map((def) => (
+          <a
+            href={`/definition/${def.slug}`}
+            class="group p-4 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
+          >
+            <span class="group-hover:text-brand-600 transition-colors">{def.definition_he}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="py-8 text-center">
+    <a
+      href="/solver"
+      class="inline-flex items-center gap-2 px-6 py-3 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+    >
+      פותר תשבצים מתקדם
+    </a>
+  </section>
+</BaseLayout>
