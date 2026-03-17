@@ -1,0 +1,155 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const hebrewLetters = ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'];
+
+export function getStaticPaths() {
+  return ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'].map(letter => ({
+    params: { letter }
+  }));
+}
+
+const { letter } = Astro.params;
+
+if (!hebrewLetters.includes(letter)) {
+  return Astro.redirect('/404');
+}
+
+// Fetch definitions starting with this letter (with solution counts)
+const { data: definitions } = await supabase
+  .from('crossword_definitions')
+  .select(`
+    id,
+    slug,
+    definition_he,
+    category,
+    crossword_solutions(id)
+  `)
+  .ilike('definition_he', `${letter}%`)
+  .order('definition_he')
+  .limit(500);
+
+// Group by sub-letters (first 2 characters)
+const groupedDefs = definitions?.reduce((acc, def) => {
+  const prefix = def.definition_he.substring(0, 2);
+  if (!acc[prefix]) acc[prefix] = [];
+  acc[prefix].push({
+    ...def,
+    solutionCount: def.crossword_solutions?.length || 0
+  });
+  return acc;
+}, {} as Record<string, any[]>) || {};
+
+const sortedPrefixes = Object.keys(groupedDefs).sort((a, b) => a.localeCompare(b, 'he'));
+
+// Current letter index for prev/next navigation
+const currentIndex = hebrewLetters.indexOf(letter);
+const prevLetter = currentIndex > 0 ? hebrewLetters[currentIndex - 1] : null;
+const nextLetter = currentIndex < hebrewLetters.length - 1 ? hebrewLetters[currentIndex + 1] : null;
+
+const pageTitle = `הגדרות באות ${letter} - פתרונות תשבצים`;
+const pageDescription = `${definitions?.length || 0} הגדרות תשבצים המתחילות באות ${letter}. מצא פתרונות להגדרות תשבצים בעברית.`;
+
+const siteUrl = Astro.site?.toString() || 'https://matzati.co.il';
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'ראשי', item: siteUrl },
+    { '@type': 'ListItem', position: 2, name: 'אות ' + letter }
+  ]
+};
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} schema={breadcrumbSchema}>
+  <section class="py-8 md:py-12">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-muted mb-6">
+      <a href="/" class="hover:text-brand-600 transition-colors">ראשי</a>
+      <span class="mx-2 text-border">←</span>
+      <span class="text-text">אות {letter}</span>
+    </nav>
+
+    <!-- Letter Navigation (Sticky) -->
+    <div class="flex flex-wrap gap-1 mb-6 sticky top-16 bg-background py-3 z-40 border-b border-border">
+      {hebrewLetters.map((l) => (
+        <a
+          href={`/letter/${l}`}
+          class:list={[
+            'w-9 h-9 flex items-center justify-center rounded-lg text-lg font-semibold transition-all',
+            l === letter
+              ? 'bg-brand-500 text-white'
+              : 'bg-surface border border-border text-text hover:bg-brand-100 hover:border-brand-300'
+          ]}
+        >
+          {l}
+        </a>
+      ))}
+    </div>
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-4xl md:text-5xl font-bold text-brand-600">{letter}</h1>
+        <p class="text-muted mt-2">{definitions?.length.toLocaleString('he-IL')} הגדרות באות {letter}</p>
+      </div>
+      <div class="flex gap-2">
+        {prevLetter && (
+          <a href={`/letter/${prevLetter}`} class="px-4 py-2 bg-surface border border-border rounded-lg hover:border-brand-300 transition-colors">
+            ← {prevLetter}
+          </a>
+        )}
+        {nextLetter && (
+          <a href={`/letter/${nextLetter}`} class="px-4 py-2 bg-surface border border-border rounded-lg hover:border-brand-300 transition-colors">
+            {nextLetter} →
+          </a>
+        )}
+      </div>
+    </div>
+
+    <!-- Definitions Grid -->
+    {sortedPrefixes.length > 0 ? (
+      <div class="space-y-8">
+        {sortedPrefixes.map((prefix) => (
+          <section>
+            <h2 class="text-lg font-semibold text-muted mb-3 border-b border-border pb-2">
+              {prefix}... ({groupedDefs[prefix].length})
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              {groupedDefs[prefix].map((def: any) => (
+                <a
+                  href={`/definition/${def.slug}`}
+                  class="group p-3 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-sm transition-all flex justify-between items-center"
+                >
+                  <span class="text-text group-hover:text-brand-600 transition-colors truncate">
+                    {def.definition_he}
+                  </span>
+                  {def.solutionCount > 0 && (
+                    <span class="text-xs text-muted bg-brand-50 px-2 py-1 rounded-full whitespace-nowrap mr-2">
+                      {def.solutionCount}
+                    </span>
+                  )}
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-12 bg-brand-50 rounded-xl">
+        <p class="text-muted">לא נמצאו הגדרות באות {letter}</p>
+      </div>
+    )}
+
+    <!-- Back Link -->
+    <div class="mt-12 flex justify-center gap-4">
+      <a href="/categories" class="px-6 py-3 bg-brand-500 text-white rounded-full font-medium hover:bg-brand-600 transition-colors">
+        קטגוריות
+      </a>
+      <a href="/solver" class="px-6 py-3 bg-surface border border-border text-text rounded-full font-medium hover:border-brand-300 transition-colors">
+        חיפוש חופשי
+      </a>
+    </div>
+  </section>
+</BaseLayout>

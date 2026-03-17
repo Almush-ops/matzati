@@ -1,0 +1,92 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabase } from '../lib/supabase';
+
+// Define main categories with icons and descriptions
+const mainCategories = [
+  { slug: 'geography', name: 'גיאוגרפיה', icon: '🌍', description: 'ערים, מדינות, נהרות, הרים', dbCategories: ['גיאוגרפיה', 'גאוגרפיה', 'ערים', 'תיירות'] },
+  { slug: 'nature', name: 'טבע', icon: '🌿', description: 'צמחים, פרחים, עצים', dbCategories: ['טבע', 'צמחים'] },
+  { slug: 'animals', name: 'בעלי חיים', icon: '🦁', description: 'יונקים, ציפורים, דגים, חרקים', dbCategories: ['בעלי חיים'] },
+  { slug: 'people', name: 'אנשים', icon: '👤', description: 'שחקנים, זמרים, סופרים, ספורטאים', dbCategories: ['אנשים', 'אישים', 'שמות'] },
+  { slug: 'history', name: 'היסטוריה ויהדות', icon: '📜', description: 'תנ"ך, היסטוריה, יהדות', dbCategories: ['היסטוריה', 'יהדות', 'תנך', 'תנ"ך', 'חגים'] },
+  { slug: 'science', name: 'מדעים', icon: '🔬', description: 'פיזיקה, כימיה, ביולוגיה', dbCategories: ['מדע', 'פיזיקה', 'מתמטיקה', 'חלל', 'טכנולוגיה'] },
+  { slug: 'music', name: 'מוזיקה', icon: '🎵', description: 'כלי נגינה, מלחינים, סגנונות', dbCategories: ['מוזיקה'] },
+  { slug: 'sports', name: 'ספורט', icon: '⚽', description: 'משחקים, ספורטאים, אולימפיאדה', dbCategories: ['ספורט', 'משחקים'] },
+  { slug: 'literature', name: 'ספרות', icon: '📚', description: 'סופרים, ספרים, שירה', dbCategories: ['ספרות', 'כתיבה'] },
+  { slug: 'art', name: 'אמנות', icon: '🎨', description: 'ציירים, פסלים, סגנונות', dbCategories: ['אמנות', 'צבעים'] },
+  { slug: 'cinema', name: 'קולנוע ותיאטרון', icon: '🎬', description: 'סרטים, שחקנים, במאים', dbCategories: ['קולנוע', 'בידור', 'תרבות'] },
+  { slug: 'food', name: 'אוכל ומשקאות', icon: '🍽️', description: 'מאכלים, תבלינים, משקאות', dbCategories: ['אוכל', 'משקאות'] },
+  { slug: 'body', name: 'גוף האדם', icon: '🫀', description: 'איברים, מערכות, רפואה', dbCategories: ['גוף', 'גוף האדם', 'רפואה', 'בריאות'] },
+  { slug: 'language', name: 'שפה ומילים', icon: '📝', description: 'דקדוק, מילים נרדפות, ביטויים', dbCategories: ['שפה', 'דקדוק', 'מילים', 'עברית', 'ארמית'] },
+  { slug: 'general', name: 'ידע כללי', icon: '💡', description: 'כללי, חפצים, מושגים', dbCategories: ['כללי', 'חפצים', 'כלים', 'מכשירים', 'חומרים', 'תחבורה', 'רכב', 'בית', 'ריהוט', 'לבוש', 'אופנה'] },
+];
+
+// Fetch counts for each category
+const categoryCounts = await Promise.all(
+  mainCategories.map(async (cat) => {
+    const { count } = await supabase
+      .from('crossword_definitions')
+      .select('*', { count: 'exact', head: true })
+      .in('category', cat.dbCategories);
+    return { ...cat, count: count || 0 };
+  })
+);
+
+// Sort by count
+const sortedCategories = categoryCounts.sort((a, b) => b.count - a.count);
+
+const pageTitle = 'קטגוריות פתרונות תשבצים';
+const pageDescription = 'עיין בפתרונות תשבצים לפי קטגוריות: גיאוגרפיה, טבע, בעלי חיים, היסטוריה, מדע, מוזיקה, ספורט ועוד.';
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <section class="py-8 md:py-12">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-muted mb-6">
+      <a href="/" class="hover:text-brand-600 transition-colors">ראשי</a>
+      <span class="mx-2 text-border">←</span>
+      <span class="text-text">קטגוריות</span>
+    </nav>
+
+    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">קטגוריות פתרונות תשבצים</h1>
+    <p class="text-muted mb-8">בחר קטגוריה לצפייה בכל ההגדרות והפתרונות</p>
+
+    <!-- Categories Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      {sortedCategories.map((cat) => (
+        <a
+          href={`/category/${cat.slug}`}
+          class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-400 hover:shadow-lg hover:shadow-brand-500/10 transition-all"
+        >
+          <div class="flex items-start gap-4">
+            <span class="text-4xl">{cat.icon}</span>
+            <div class="flex-1">
+              <h2 class="text-xl font-semibold text-text group-hover:text-brand-600 transition-colors">
+                {cat.name}
+              </h2>
+              <p class="text-sm text-muted mt-1">{cat.description}</p>
+              <p class="text-sm text-brand-600 mt-2 font-medium">
+                {cat.count.toLocaleString('he-IL')} הגדרות
+              </p>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- Alphabet Navigation -->
+  <section class="py-8 md:py-12 bg-brand-50 -mx-4 px-4 md:-mx-8 md:px-8 mt-8 rounded-xl">
+    <h2 class="text-2xl font-bold mb-6 text-text">חיפוש לפי אות</h2>
+    <div class="flex flex-wrap gap-2 justify-center">
+      {['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'].map((letter) => (
+        <a
+          href={`/letter/${letter}`}
+          class="w-10 h-10 flex items-center justify-center bg-surface border border-border rounded-lg text-lg font-semibold text-text hover:bg-brand-500 hover:text-white hover:border-brand-500 transition-all"
+        >
+          {letter}
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

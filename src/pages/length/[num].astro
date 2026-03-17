@@ -1,0 +1,163 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const validLengths = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+export function getStaticPaths() {
+  return [2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => ({
+    params: { num: num.toString() }
+  }));
+}
+
+const { num } = Astro.params;
+const letterCount = parseInt(num);
+
+if (!validLengths.includes(letterCount)) {
+  return Astro.redirect('/404');
+}
+
+// Fetch solutions with this letter count (with definitions)
+const { data: solutions } = await supabase
+  .from('crossword_solutions')
+  .select(`
+    id,
+    solution,
+    letter_count,
+    crossword_definitions!inner(
+      id,
+      slug,
+      definition_he,
+      category
+    )
+  `)
+  .eq('letter_count', letterCount)
+  .order('solution')
+  .limit(500);
+
+// Group by first letter of solution
+const groupedSolutions = solutions?.reduce((acc, sol) => {
+  const firstLetter = sol.solution.charAt(0);
+  if (!acc[firstLetter]) acc[firstLetter] = [];
+  acc[firstLetter].push(sol);
+  return acc;
+}, {} as Record<string, typeof solutions>) || {};
+
+const sortedLetters = Object.keys(groupedSolutions).sort((a, b) => a.localeCompare(b, 'he'));
+
+// Prev/next navigation
+const currentIndex = validLengths.indexOf(letterCount);
+const prevLength = currentIndex > 0 ? validLengths[currentIndex - 1] : null;
+const nextLength = currentIndex < validLengths.length - 1 ? validLengths[currentIndex + 1] : null;
+
+const pageTitle = `מילים של ${letterCount} אותיות - פתרונות תשבצים`;
+const pageDescription = `${solutions?.length || 0} פתרונות תשבצים של ${letterCount} אותיות. מצא את המילה המתאימה לתשבץ שלך לפי אורך.`;
+
+const siteUrl = Astro.site?.toString() || 'https://matzati.co.il';
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'ראשי', item: siteUrl },
+    { '@type': 'ListItem', position: 2, name: `${letterCount} אותיות` }
+  ]
+};
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} schema={breadcrumbSchema}>
+  <section class="py-8 md:py-12">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-muted mb-6">
+      <a href="/" class="hover:text-brand-600 transition-colors">ראשי</a>
+      <span class="mx-2 text-border">←</span>
+      <span class="text-text">{letterCount} אותיות</span>
+    </nav>
+
+    <!-- Length Navigation -->
+    <div class="flex flex-wrap gap-2 mb-6 sticky top-16 bg-background py-3 z-40 border-b border-border">
+      {validLengths.map((n) => (
+        <a
+          href={`/length/${n}`}
+          class:list={[
+            'px-4 py-2 rounded-lg font-semibold transition-all',
+            n === letterCount
+              ? 'bg-brand-500 text-white'
+              : 'bg-surface border border-border text-text hover:bg-brand-100 hover:border-brand-300'
+          ]}
+        >
+          {n} אותיות
+        </a>
+      ))}
+    </div>
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold text-text">
+          פתרונות של <span class="text-brand-600">{letterCount}</span> אותיות
+        </h1>
+        <p class="text-muted mt-2">{solutions?.length.toLocaleString('he-IL')} פתרונות נמצאו</p>
+      </div>
+      <div class="flex gap-2">
+        {prevLength && (
+          <a href={`/length/${prevLength}`} class="px-4 py-2 bg-surface border border-border rounded-lg hover:border-brand-300 transition-colors">
+            ← {prevLength} אותיות
+          </a>
+        )}
+        {nextLength && (
+          <a href={`/length/${nextLength}`} class="px-4 py-2 bg-surface border border-border rounded-lg hover:border-brand-300 transition-colors">
+            {nextLength} אותיות →
+          </a>
+        )}
+      </div>
+    </div>
+
+    <!-- Solutions Grid by Letter -->
+    {sortedLetters.length > 0 ? (
+      <div class="space-y-8">
+        {sortedLetters.map((letter) => (
+          <section id={`letter-${letter}`}>
+            <h2 class="text-xl font-bold mb-4 text-text flex items-center gap-2">
+              <span class="w-8 h-8 bg-brand-100 text-brand-700 rounded-lg flex items-center justify-center text-lg">
+                {letter}
+              </span>
+              <span class="text-muted font-normal text-base">({groupedSolutions[letter].length} מילים)</span>
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {groupedSolutions[letter].map((sol: any) => (
+                <a
+                  href={`/definition/${sol.crossword_definitions.slug}`}
+                  class="group p-4 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all"
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xl font-bold text-brand-600">{sol.solution}</span>
+                    <span class="text-xs bg-brand-50 text-brand-700 px-2 py-1 rounded-full">
+                      {letterCount} אותיות
+                    </span>
+                  </div>
+                  <p class="text-sm text-muted truncate group-hover:text-text transition-colors">
+                    {sol.crossword_definitions.definition_he}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-12 bg-brand-50 rounded-xl">
+        <p class="text-muted">לא נמצאו פתרונות של {letterCount} אותיות</p>
+      </div>
+    )}
+
+    <!-- Back Links -->
+    <div class="mt-12 flex justify-center gap-4">
+      <a href="/categories" class="px-6 py-3 bg-brand-500 text-white rounded-full font-medium hover:bg-brand-600 transition-colors">
+        קטגוריות
+      </a>
+      <a href="/solver" class="px-6 py-3 bg-surface border border-border text-text rounded-full font-medium hover:border-brand-300 transition-colors">
+        פותר תשבצים
+      </a>
+    </div>
+  </section>
+</BaseLayout>

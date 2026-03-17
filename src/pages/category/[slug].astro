@@ -1,0 +1,147 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+// Category definitions
+const categoryMap: Record<string, { name: string; icon: string; dbCategories: string[] }> = {
+  'geography': { name: 'גיאוגרפיה', icon: '🌍', dbCategories: ['גיאוגרפיה', 'גאוגרפיה', 'ערים', 'תיירות'] },
+  'nature': { name: 'טבע', icon: '🌿', dbCategories: ['טבע', 'צמחים'] },
+  'animals': { name: 'בעלי חיים', icon: '🦁', dbCategories: ['בעלי חיים'] },
+  'people': { name: 'אנשים', icon: '👤', dbCategories: ['אנשים', 'אישים', 'שמות'] },
+  'history': { name: 'היסטוריה ויהדות', icon: '📜', dbCategories: ['היסטוריה', 'יהדות', 'תנך', 'תנ"ך', 'חגים'] },
+  'science': { name: 'מדעים', icon: '🔬', dbCategories: ['מדע', 'פיזיקה', 'מתמטיקה', 'חלל', 'טכנולוגיה'] },
+  'music': { name: 'מוזיקה', icon: '🎵', dbCategories: ['מוזיקה'] },
+  'sports': { name: 'ספורט', icon: '⚽', dbCategories: ['ספורט', 'משחקים'] },
+  'literature': { name: 'ספרות', icon: '📚', dbCategories: ['ספרות', 'כתיבה'] },
+  'art': { name: 'אמנות', icon: '🎨', dbCategories: ['אמנות', 'צבעים'] },
+  'cinema': { name: 'קולנוע ותיאטרון', icon: '🎬', dbCategories: ['קולנוע', 'בידור', 'תרבות'] },
+  'food': { name: 'אוכל ומשקאות', icon: '🍽️', dbCategories: ['אוכל', 'משקאות'] },
+  'body': { name: 'גוף האדם', icon: '🫀', dbCategories: ['גוף', 'גוף האדם', 'רפואה', 'בריאות'] },
+  'language': { name: 'שפה ומילים', icon: '📝', dbCategories: ['שפה', 'דקדוק', 'מילים', 'עברית', 'ארמית'] },
+  'general': { name: 'ידע כללי', icon: '💡', dbCategories: ['כללי', 'חפצים', 'כלים', 'מכשירים', 'חומרים', 'תחבורה', 'רכב', 'בית', 'ריהוט', 'לבוש', 'אופנה'] },
+};
+
+export function getStaticPaths() {
+  return Object.keys(categoryMap).map(slug => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+const category = categoryMap[slug];
+
+if (!category) {
+  return Astro.redirect('/404');
+}
+
+// Fetch definitions in this category with solution counts
+const { data: definitions } = await supabase
+  .from('crossword_definitions')
+  .select(`
+    id,
+    slug,
+    definition_he,
+    crossword_solutions(id)
+  `)
+  .in('category', category.dbCategories)
+  .order('definition_he');
+
+// Group by first letter
+const groupedDefinitions = definitions?.reduce((acc, def) => {
+  const firstLetter = def.definition_he.charAt(0);
+  if (!acc[firstLetter]) acc[firstLetter] = [];
+  acc[firstLetter].push({
+    ...def,
+    solutionCount: def.crossword_solutions?.length || 0
+  });
+  return acc;
+}, {} as Record<string, typeof definitions>) || {};
+
+// Sort letters
+const sortedLetters = Object.keys(groupedDefinitions).sort((a, b) => a.localeCompare(b, 'he'));
+
+const pageTitle = `${category.name} - פתרונות תשבצים`;
+const pageDescription = `${definitions?.length || 0} הגדרות ופתרונות תשבצים בקטגוריית ${category.name}. מצא את הפתרון המתאים לתשבץ שלך.`;
+
+const siteUrl = Astro.site?.toString() || 'https://matzati.co.il';
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'ראשי', item: siteUrl },
+    { '@type': 'ListItem', position: 2, name: 'קטגוריות', item: `${siteUrl}/categories` },
+    { '@type': 'ListItem', position: 3, name: category.name }
+  ]
+};
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} schema={breadcrumbSchema}>
+  <section class="py-8 md:py-12">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-muted mb-6">
+      <a href="/" class="hover:text-brand-600 transition-colors">ראשי</a>
+      <span class="mx-2 text-border">←</span>
+      <a href="/categories" class="hover:text-brand-600 transition-colors">קטגוריות</a>
+      <span class="mx-2 text-border">←</span>
+      <span class="text-text">{category.name}</span>
+    </nav>
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+      <span class="text-5xl">{category.icon}</span>
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold text-text">{category.name}</h1>
+        <p class="text-muted mt-1">{definitions?.length.toLocaleString('he-IL')} הגדרות</p>
+      </div>
+    </div>
+
+    <!-- Letter Navigation -->
+    <div class="flex flex-wrap gap-2 mb-8 sticky top-16 bg-background py-3 z-40">
+      {sortedLetters.map((letter) => (
+        <a
+          href={`#letter-${letter}`}
+          class="w-8 h-8 flex items-center justify-center bg-brand-50 border border-brand-200 rounded text-sm font-medium text-brand-700 hover:bg-brand-500 hover:text-white transition-all"
+        >
+          {letter}
+        </a>
+      ))}
+    </div>
+
+    <!-- Definitions by Letter -->
+    {sortedLetters.map((letter) => (
+      <section id={`letter-${letter}`} class="mb-10 scroll-mt-28">
+        <h2 class="text-2xl font-bold mb-4 text-text flex items-center gap-2">
+          <span class="w-10 h-10 bg-brand-500 text-white rounded-lg flex items-center justify-center">
+            {letter}
+          </span>
+          <span>{groupedDefinitions[letter].length} הגדרות</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {groupedDefinitions[letter].map((def) => (
+            <a
+              href={`/definition/${def.slug}`}
+              class="group p-4 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-md transition-all"
+            >
+              <span class="text-text group-hover:text-brand-600 transition-colors font-medium">
+                {def.definition_he}
+              </span>
+              {def.solutionCount > 0 && (
+                <span class="text-sm text-muted mr-2">
+                  ({def.solutionCount} פתרונות)
+                </span>
+              )}
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    <!-- Back to Categories -->
+    <div class="mt-12 text-center">
+      <a
+        href="/categories"
+        class="inline-flex items-center gap-2 px-6 py-3 bg-brand-500 text-white rounded-full font-medium hover:bg-brand-600 transition-colors"
+      >
+        ← חזרה לקטגוריות
+      </a>
+    </div>
+  </section>
+</BaseLayout>
