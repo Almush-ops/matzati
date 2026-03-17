@@ -84,27 +84,41 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     resultsSection.classList.add('hidden');
 
     try {
+      // Parse query for letter count filter (e.g., "חלק בגוף 3 אותיות")
+      let letterCount: number | null = null;
+      let searchQuery = query.trim();
+
+      const letterMatch = searchQuery.match(/(\d+)\s*אותיות/);
+      if (letterMatch) {
+        letterCount = parseInt(letterMatch[1]);
+        searchQuery = searchQuery.replace(/\d+\s*אותיות/, '').trim();
+      }
+
       // Check if it's a pattern search (contains ?)
-      const isPattern = query.includes('?');
+      const isPattern = searchQuery.includes('?');
 
       let results: any[] = [];
 
       if (isPattern) {
         // Pattern search - search in solutions
-        const pattern = query.replace(/\?/g, '_'); // SQL LIKE uses _ for single char
-        const { data } = await supabase
+        const pattern = searchQuery.replace(/\?/g, '_'); // SQL LIKE uses _ for single char
+        let q = supabase
           .from('crossword_solutions')
           .select(`
             solution,
             letter_count,
             crossword_definitions (slug, definition_he)
           `)
-          .ilike('solution', pattern)
-          .limit(30);
+          .ilike('solution', pattern);
 
+        if (letterCount) {
+          q = q.eq('letter_count', letterCount);
+        }
+
+        const { data } = await q.limit(30);
         results = data || [];
       } else {
-        // Text search - search in definitions
+        // Text search - search in definitions with optional letter count filter
         const { data } = await supabase
           .from('crossword_definitions')
           .select(`
@@ -112,10 +126,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             definition_he,
             crossword_solutions (solution, letter_count)
           `)
-          .ilike('definition_he', `%${query}%`)
-          .limit(20);
+          .ilike('definition_he', `%${searchQuery}%`)
+          .limit(50);
 
-        results = data || [];
+        // Filter by letter count if specified
+        if (letterCount && data) {
+          results = data.map((def: any) => ({
+            ...def,
+            crossword_solutions: def.crossword_solutions?.filter(
+              (s: any) => s.letter_count === letterCount
+            )
+          })).filter((def: any) => def.crossword_solutions?.length > 0);
+        } else {
+          results = data || [];
+        }
       }
 
       // Hide loading
@@ -123,7 +147,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       // Show results
       resultsSection.classList.remove('hidden');
-      resultsTitle.textContent = `תוצאות עבור "${query}" (${results.length} נמצאו)`;
+      const titleParts = [`תוצאות עבור "${searchQuery}"`];
+      if (letterCount) titleParts.push(`${letterCount} אותיות`);
+      titleParts.push(`(${results.length} נמצאו)`);
+      resultsTitle.textContent = titleParts.join(' - ');
 
       if (results.length > 0) {
         if (isPattern) {
