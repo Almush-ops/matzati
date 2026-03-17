@@ -5,7 +5,7 @@ import SearchAutocomplete from '../../components/SearchAutocomplete.astro';
 import { supabase } from '../../lib/supabase';
 
 export async function getStaticPaths() {
-  // Supabase limits to 1000 rows per request - use pagination to get all 5000+
+  // Only fetch definitions that have at least one solution
   const allDefinitions: { slug: string }[] = [];
   const pageSize = 1000;
   let page = 0;
@@ -15,13 +15,14 @@ export async function getStaticPaths() {
     const from = page * pageSize;
     const to = from + pageSize - 1;
 
+    // Join with solutions to only get definitions that have solutions
     const { data } = await supabase
       .from('crossword_definitions')
-      .select('slug')
+      .select('slug, crossword_solutions!inner(id)')
       .range(from, to);
 
     if (data && data.length > 0) {
-      allDefinitions.push(...data);
+      allDefinitions.push(...data.map(d => ({ slug: d.slug })));
       hasMore = data.length === pageSize;
       page++;
     } else {
@@ -29,7 +30,7 @@ export async function getStaticPaths() {
     }
   }
 
-  console.log(`[getStaticPaths] Fetched ${allDefinitions.length} definitions`);
+  console.log(`[getStaticPaths] Fetched ${allDefinitions.length} definitions with solutions`);
 
   return allDefinitions.map((def) => ({
     params: { slug: def.slug },
