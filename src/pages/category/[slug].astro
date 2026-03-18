@@ -33,14 +33,14 @@ if (!category) {
   return Astro.redirect('/404');
 }
 
-// Fetch definitions in this category WITH solutions only (inner join)
+// Fetch ALL definitions in this category (with or without solutions)
 const { data: definitions } = await supabase
   .from('crossword_definitions')
   .select(`
     id,
     slug,
     definition_he,
-    crossword_solutions!inner(id)
+    crossword_solutions(id)
   `)
   .in('category', category.dbCategories)
   .order('definition_he');

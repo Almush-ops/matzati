@@ -16,7 +16,7 @@ if (!hebrewLetters.includes(letter)) {
   return Astro.redirect('/404');
 }
 
-// Fetch definitions starting with this letter WITH solutions only (inner join)
+// Fetch ALL definitions starting with this letter
 const { data: definitions } = await supabase
   .from('crossword_definitions')
   .select(`
@@ -24,11 +24,10 @@ const { data: definitions } = await supabase
     slug,
     definition_he,
     category,
-    crossword_solutions!inner(id)
+    crossword_solutions(id)
   `)
   .ilike('definition_he', `${letter}%`)
-  .order('definition_he')
-  .limit(500);
+  .order('definition_he');
 
 // Group by sub-letters (first 2 characters)
 const groupedDefs = definitions?.reduce((acc, def) => {

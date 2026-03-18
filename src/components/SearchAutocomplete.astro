@@ -103,9 +103,9 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
     if (query.length < 2) return [];
 
     try {
-      // Use inner join to only show definitions that have solutions (actual pages)
+      // Fetch all matching definitions (all have pages now)
       const response = await fetch(
-        `${supabaseUrl}/rest/v1/crossword_definitions?definition_he=ilike.*${encodeURIComponent(query)}*&select=slug,definition_he,crossword_solutions!inner(id)&limit=8&order=search_count.desc`,
+        `${supabaseUrl}/rest/v1/crossword_definitions?definition_he=ilike.*${encodeURIComponent(query)}*&select=slug,definition_he&limit=8&order=search_count.desc`,
         {
           headers: {
             'apikey': supabaseAnonKey,

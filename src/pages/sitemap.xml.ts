@@ -6,10 +6,10 @@ export const prerender = true;
 export const GET: APIRoute = async () => {
   const site = 'https://matzati.co.il';
 
-  // Fetch definitions WITH solutions only (inner join) - to match actual built pages
+  // Fetch ALL definitions - all have pages now
   const { data: definitions } = await supabase
     .from('crossword_definitions')
-    .select('slug, updated_at, crossword_solutions!inner(id)');
+    .select('slug, updated_at');
 
   // Fetch all words by length (2-15 letters)
   const wordLengths = Array.from({ length: 14 }, (_, i) => i + 2);

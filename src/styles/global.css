@@ -37,6 +37,7 @@
 /* RTL Support */
 html {
   direction: rtl;
+  font-size: 20px;
 }
 
 /* Focus styles */
