@@ -3,17 +3,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import SearchAutocomplete from '../../components/SearchAutocomplete.astro';
 import { supabase } from '../../lib/supabase';
 
-// Fetch popular definitions (most searched)
+// Fetch popular definitions WITH solutions only (inner join)
 const { data: popularDefs } = await supabase
   .from('crossword_definitions')
-  .select('slug, definition_he')
+  .select('slug, definition_he, crossword_solutions!inner(id)')
   .order('search_count', { ascending: false })
   .limit(24);
 
-// Fetch recent definitions
+// Fetch recent definitions WITH solutions only (inner join)
 const { data: recentDefs } = await supabase
   .from('crossword_definitions')
-  .select('slug, definition_he')
+  .select('slug, definition_he, crossword_solutions!inner(id)')
   .order('created_at', { ascending: false })
   .limit(12);
 

@@ -16,7 +16,7 @@ if (!hebrewLetters.includes(letter)) {
   return Astro.redirect('/404');
 }
 
-// Fetch definitions starting with this letter (with solution counts)
+// Fetch definitions starting with this letter WITH solutions only (inner join)
 const { data: definitions } = await supabase
   .from('crossword_definitions')
   .select(`
@@ -24,7 +24,7 @@ const { data: definitions } = await supabase
     slug,
     definition_he,
     category,
-    crossword_solutions(id)
+    crossword_solutions!inner(id)
   `)
   .ilike('definition_he', `${letter}%`)
   .order('definition_he')

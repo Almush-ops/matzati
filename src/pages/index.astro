@@ -4,17 +4,17 @@ import SearchAutocomplete from '../components/SearchAutocomplete.astro';
 import DefinitionCard from '../components/DefinitionCard.astro';
 import { supabase } from '../lib/supabase';
 
-// Fetch popular definitions (top 20)
+// Fetch popular definitions WITH solutions only (inner join)
 const { data: popularDefinitions } = await supabase
   .from('crossword_definitions')
-  .select('slug, definition_he')
+  .select('slug, definition_he, crossword_solutions!inner(id)')
   .order('search_count', { ascending: false })
   .limit(20);
 
-// Fetch recently added definitions (last 20)
+// Fetch recently added definitions WITH solutions only (inner join)
 const { data: recentDefinitions } = await supabase
   .from('crossword_definitions')
-  .select('slug, definition_he')
+  .select('slug, definition_he, crossword_solutions!inner(id)')
   .order('created_at', { ascending: false })
   .limit(20);
 
