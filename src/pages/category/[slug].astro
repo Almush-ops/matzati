@@ -22,7 +22,8 @@ const categoryMap: Record<string, { name: string; icon: string; dbCategories: st
 };
 
 export function getStaticPaths() {
-  return Object.keys(categoryMap).map(slug => ({ params: { slug } }));
+  const categorySlugs = ['geography', 'nature', 'animals', 'people', 'history', 'science', 'music', 'sports', 'literature', 'art', 'cinema', 'food', 'body', 'language', 'general'];
+  return categorySlugs.map(slug => ({ params: { slug } }));
 }
 
 const { slug } = Astro.params;
