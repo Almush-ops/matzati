@@ -2,29 +2,39 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabase } from '../../lib/supabase';
 
-// Get popular words with synonyms (static, at build time)
-const { data: words } = await supabase
+// Get popular words (most synonyms) at build time
+const { data: popularData } = await supabase
   .from('matzati_synonyms')
   .select('word')
-  .limit(1000);
+  .limit(5000);
 
-const uniqueWords = [...new Set(words?.map(w => w.word) || [])].sort();
+// Count synonyms per word and get top ones
+const synCounts: Record<string, number> = {};
+popularData?.forEach(r => {
+  synCounts[r.word] = (synCounts[r.word] || 0) + 1;
+});
+
+const popularWords = Object.entries(synCounts)
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 48)
+  .map(([word, count]) => ({ word, count }));
 
 // Hebrew letters for the filter
 const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
 ---
 
-<BaseLayout title="מילים נרדפות בעברית | מילון סינונימים" description="מילון מילים נרדפות בעברית - חפש וגלה סינונימים לכל מילה. מאגר מקיף של מילים נרדפות לשימוש בכתיבה ותשבצים.">
+<BaseLayout title="מילים נרדפות בעברית | מילון סינונימים" description="מילון מילים נרדפות בעברית - חפש וגלה סינונימים לכל מילה. מאגר מקיף של 56,000+ מילים נרדפות ל-4,700+ מילים לשימוש בכתיבה ותשבצים.">
   <section class="text-center py-12 md:py-16">
-    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">מילים נרדפות בעברית</h1>
-    <p class="text-muted mb-8">מצא מילה נרדפת לכל מילה בעברית</p>
+    <h1 class="text-3xl md:text-4xl font-bold mb-3 text-text">מילים נרדפות בעברית</h1>
+    <p class="text-muted mb-2">מאגר של 56,000+ מילים נרדפות ל-4,700+ מילים</p>
+    <p class="text-sm text-muted mb-8">מצא מילה נרדפת לכל מילה בעברית</p>
 
     <form id="search-form" class="max-w-xl mx-auto mb-8">
       <div class="relative">
         <input
           type="search"
           id="search-input"
-          placeholder="הקלד מילה..."
+          placeholder="הקלד מילה לחיפוש נרדפות..."
           class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
         />
         <button
@@ -70,18 +80,60 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     <p class="mt-4 text-muted">מחפש...</p>
   </div>
 
-  <!-- Popular Words -->
+  <!-- Popular Words (sorted by synonym count) -->
   <section id="popular-section" class="py-8 md:py-12">
     <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-      {uniqueWords.slice(0, 48).map((word) => (
+      {popularWords.map(({ word, count }) => (
         <a
           href={`/synonyms/${word}`}
-          class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
+          class="group p-4 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all flex flex-col items-center gap-1"
         >
-          <span class="group-hover:text-brand-600 transition-colors">{word}</span>
+          <span class="group-hover:text-brand-600 transition-colors font-medium">{word}</span>
+          <span class="text-xs text-muted">{count} נרדפות</span>
         </a>
       ))}
+    </div>
+  </section>
+
+  <!-- What are synonyms -->
+  <section class="py-8 md:py-12 bg-brand-50 border border-brand-100 rounded-xl p-6 md:p-8">
+    <h2 class="text-xl font-semibold mb-4 text-text">מה הן מילים נרדפות?</h2>
+    <p class="text-muted mb-4">
+      מילים נרדפות (סינונימים) הן מילים בעלות משמעות דומה או זהה. שימוש במילים נרדפות מעשיר את הכתיבה ומונע חזרות.
+    </p>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="p-4 bg-surface rounded-xl border border-brand-100">
+        <h3 class="font-semibold mb-2 text-brand-700">כתיבה יצירתית</h3>
+        <p class="text-sm text-muted">העשרת אוצר מילים לשירים, סיפורים ומאמרים</p>
+      </div>
+      <div class="p-4 bg-surface rounded-xl border border-brand-100">
+        <h3 class="font-semibold mb-2 text-brand-700">תשבצים</h3>
+        <p class="text-sm text-muted">מציאת פתרונות להגדרות "מילה נרדפת ל..."</p>
+      </div>
+      <div class="p-4 bg-surface rounded-xl border border-brand-100">
+        <h3 class="font-semibold mb-2 text-brand-700">עבודות אקדמיות</h3>
+        <p class="text-sm text-muted">הימנעות מחזרות וגיוון הלשון בכתיבה אקדמית</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cross-links -->
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">כלים נוספים</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <a href="/solver" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">פותר תשבצים</h3>
+        <p class="text-sm text-muted">חפש פתרונות לפי הגדרה או תבנית אותיות</p>
+      </a>
+      <a href="/rhymes" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">חרוזים</h3>
+        <p class="text-sm text-muted">מצא חרוז לכל מילה - מלא וחלקי</p>
+      </a>
+      <a href="/words" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">מילים לפי אורך</h3>
+        <p class="text-sm text-muted">רשימות מילים לפי מספר אותיות</p>
+      </a>
     </div>
   </section>
 </BaseLayout>
@@ -111,33 +163,28 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
   function hideResults() {
     resultsSection.classList.add('hidden');
     popularSection.classList.remove('hidden');
-    // Remove active state from all letter buttons
     letterBtns.forEach(btn => btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500'));
   }
 
   async function searchByQuery(query: string) {
     if (!query.trim()) return;
 
-    // Update URL
     const url = new URL(window.location.href);
     url.searchParams.delete('letter');
     url.searchParams.set('q', query);
     window.history.pushState({}, '', url);
 
-    // Show loading
     loading.classList.remove('hidden');
     popularSection.classList.add('hidden');
     resultsSection.classList.add('hidden');
 
     try {
-      // Search for words that match
       const { data: results } = await supabase
         .from('matzati_synonyms')
         .select('word, synonym')
         .or(`word.ilike.%${query}%,synonym.ilike.%${query}%`)
         .limit(50);
 
-      // Get unique words from results
       const uniqueWords = [...new Set(results?.map(r => r.word) || [])];
 
       loading.classList.add('hidden');
@@ -177,13 +224,11 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
   }
 
   async function filterByLetter(letter: string) {
-    // Update URL
     const url = new URL(window.location.href);
     url.searchParams.delete('q');
     url.searchParams.set('letter', letter);
     window.history.pushState({}, '', url);
 
-    // Update button states
     letterBtns.forEach(btn => {
       if (btn.getAttribute('data-letter') === letter) {
         btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
@@ -192,20 +237,17 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
       }
     });
 
-    // Show loading
     loading.classList.remove('hidden');
     popularSection.classList.add('hidden');
     resultsSection.classList.add('hidden');
 
     try {
-      // Get words starting with this letter
       const { data: results } = await supabase
         .from('matzati_synonyms')
         .select('word')
         .ilike('word', `${letter}%`)
         .limit(500);
 
-      // Get unique words
       const uniqueWords = [...new Set(results?.map(r => r.word) || [])];
 
       loading.classList.add('hidden');
@@ -243,13 +285,11 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     }
   }
 
-  // Handle form submit
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     searchByQuery(input.value);
   });
 
-  // Handle letter button clicks
   letterBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const letter = btn.getAttribute('data-letter');
@@ -257,14 +297,12 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     });
   });
 
-  // Handle clear button
   clearBtn.addEventListener('click', () => {
     input.value = '';
     hideResults();
     window.history.pushState({}, '', '/synonyms');
   });
 
-  // Check URL for query/letter on page load
   const urlParams = new URLSearchParams(window.location.search);
   const initialQuery = urlParams.get('q');
   const initialLetter = urlParams.get('letter');

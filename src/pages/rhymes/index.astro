@@ -2,29 +2,42 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabase } from '../../lib/supabase';
 
-// Get unique words with rhymes (static, at build time)
-const { data: rhymeWords } = await supabase
+// Get popular words (most rhymes) at build time
+const { data: rhymeData } = await supabase
   .from('rhymes')
-  .select('word')
-  .limit(2000);
+  .select('word, rhyme_type')
+  .limit(5000);
 
-const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])].sort();
+// Count rhymes per word and get top ones
+const rhymeCounts: Record<string, { total: number; full: number; partial: number }> = {};
+rhymeData?.forEach(r => {
+  if (!rhymeCounts[r.word]) rhymeCounts[r.word] = { total: 0, full: 0, partial: 0 };
+  rhymeCounts[r.word].total++;
+  if (r.rhyme_type === 'full') rhymeCounts[r.word].full++;
+  else rhymeCounts[r.word].partial++;
+});
+
+const popularWords = Object.entries(rhymeCounts)
+  .sort((a, b) => b[1].total - a[1].total)
+  .slice(0, 48)
+  .map(([word, counts]) => ({ word, ...counts }));
 
 // Hebrew letters for the filter
 const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
 ---
 
-<BaseLayout title="חרוזים בעברית | מילון חרוזים לשירים וברכות" description="מילון חרוזים בעברית - מצא חרוזים מלאים וחלקיים לכל מילה. מושלם לכתיבת שירים, ברכות וטקסטים יצירתיים.">
+<BaseLayout title="חרוזים בעברית | מילון חרוזים לשירים וברכות" description="מילון חרוזים בעברית - מצא חרוזים מלאים וחלקיים לכל מילה. מאגר של 40,000+ חרוזים ל-1,100+ מילים. מושלם לכתיבת שירים, ברכות וטקסטים יצירתיים.">
   <section class="text-center py-12 md:py-16">
-    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">חרוזים בעברית</h1>
-    <p class="text-muted mb-8">מצא חרוז לכל מילה - לשירים, ברכות ועוד</p>
+    <h1 class="text-3xl md:text-4xl font-bold mb-3 text-text">חרוזים בעברית</h1>
+    <p class="text-muted mb-2">מאגר של 40,000+ חרוזים ל-1,100+ מילים</p>
+    <p class="text-sm text-muted mb-8">מצא חרוז לכל מילה - לשירים, ברכות ועוד</p>
 
     <form id="search-form" class="max-w-xl mx-auto mb-8">
       <div class="relative">
         <input
           type="search"
           id="search-input"
-          placeholder="הקלד מילה..."
+          placeholder="הקלד מילה לחיפוש חרוזים..."
           class="w-full px-6 py-4 text-lg bg-surface border-2 border-border rounded-full focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none transition-all"
         />
         <button
@@ -70,16 +83,17 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     <p class="mt-4 text-muted">מחפש...</p>
   </div>
 
-  <!-- Popular Rhyme Words -->
+  <!-- Popular Rhyme Words (sorted by count) -->
   <section id="popular-section" class="py-8 md:py-12">
     <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-      {uniqueWords.slice(0, 48).map((word) => (
+      {popularWords.map(({ word, total }) => (
         <a
           href={`/rhymes/${word}`}
-          class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
+          class="group p-4 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all flex flex-col items-center gap-1"
         >
-          <span class="group-hover:text-brand-600 transition-colors">{word}</span>
+          <span class="group-hover:text-brand-600 transition-colors font-medium">{word}</span>
+          <span class="text-xs text-muted">{total} חרוזים</span>
         </a>
       ))}
     </div>
@@ -101,6 +115,48 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
         <h3 class="font-semibold mb-2 text-brand-700">אסונאנס</h3>
         <p class="text-sm text-muted">חזרה על תנועות דומות</p>
       </div>
+    </div>
+  </section>
+
+  <!-- Use cases -->
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">מתי משתמשים בחרוזים?</h2>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-5 bg-surface border border-border rounded-xl">
+        <h3 class="font-semibold mb-2 text-text">שירים</h3>
+        <p class="text-sm text-muted">חרוזים לשירים ופזמונים</p>
+      </div>
+      <div class="p-5 bg-surface border border-border rounded-xl">
+        <h3 class="font-semibold mb-2 text-text">ברכות</h3>
+        <p class="text-sm text-muted">ברכות מחורזות לימי הולדת ואירועים</p>
+      </div>
+      <div class="p-5 bg-surface border border-border rounded-xl">
+        <h3 class="font-semibold mb-2 text-text">ראפ</h3>
+        <p class="text-sm text-muted">חרוזים לכתיבת ראפ בעברית</p>
+      </div>
+      <div class="p-5 bg-surface border border-border rounded-xl">
+        <h3 class="font-semibold mb-2 text-text">משחקי מילים</h3>
+        <p class="text-sm text-muted">חרוזים לחידונים ומשחקים</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cross-links -->
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">כלים נוספים</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <a href="/solver" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">פותר תשבצים</h3>
+        <p class="text-sm text-muted">חפש פתרונות לפי הגדרה או תבנית אותיות</p>
+      </a>
+      <a href="/synonyms" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">מילים נרדפות</h3>
+        <p class="text-sm text-muted">מצא סינונימים לכל מילה בעברית</p>
+      </a>
+      <a href="/words" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">מילים לפי אורך</h3>
+        <p class="text-sm text-muted">רשימות מילים לפי מספר אותיות</p>
+      </a>
     </div>
   </section>
 </BaseLayout>
@@ -252,13 +308,11 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     }
   }
 
-  // Handle form submit
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     searchByQuery(input.value);
   });
 
-  // Handle letter button clicks
   letterBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const letter = btn.getAttribute('data-letter');
@@ -266,14 +320,12 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     });
   });
 
-  // Handle clear button
   clearBtn.addEventListener('click', () => {
     input.value = '';
     hideResults();
     window.history.pushState({}, '', '/rhymes');
   });
 
-  // Check URL for query/letter on page load
   const urlParams = new URLSearchParams(window.location.search);
   const initialQuery = urlParams.get('q');
   const initialLetter = urlParams.get('letter');

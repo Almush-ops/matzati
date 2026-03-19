@@ -1,28 +1,35 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { supabase } from '../../lib/supabase';
 
-// Get word counts by length
-const { data: counts } = await supabase
-  .from('hebrew_words')
-  .select('letter_count');
-
-const countByLength: Record<number, number> = {};
-counts?.forEach(w => {
-  countByLength[w.letter_count] = (countByLength[w.letter_count] || 0) + 1;
-});
+// Hardcoded counts from crossword_solutions (much bigger dataset than hebrew_words)
+const wordCounts: Record<number, number> = {
+  2: 344,
+  3: 2236,
+  4: 4911,
+  5: 5857,
+  6: 5547,
+  7: 5046,
+  8: 4585,
+  9: 3970,
+  10: 3409,
+  11: 2503,
+  12: 1780,
+};
 
 const lengths = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const totalWords = Object.values(wordCounts).reduce((a, b) => a + b, 0);
 ---
 
-<BaseLayout title="מילים בעברית לפי אורך | 2-15 אותיות" description="רשימת מילים בעברית לפי מספר אותיות. מושלם לתשבצים, וורדל, משחקי מילים וכתיבה. מאות מילים בכל אורך.">
+<BaseLayout title="מילים בעברית לפי אורך | 2-12 אותיות" description="רשימת מילים בעברית לפי מספר אותיות. מאגר של 40,000+ מילים. מושלם לתשבצים, וורדל, משחקי מילים וכתיבה.">
   <section class="text-center py-12 md:py-16">
-    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-text">מילים בעברית לפי אורך</h1>
-    <p class="text-muted mb-8">בחר מספר אותיות לצפייה ברשימת המילים</p>
+    <h1 class="text-3xl md:text-4xl font-bold mb-3 text-text">מילים בעברית לפי אורך</h1>
+    <p class="text-muted mb-2">מאגר של {totalWords.toLocaleString('he-IL')} מילים ייחודיות</p>
+    <p class="text-sm text-muted mb-8">בחר מספר אותיות לצפייה ברשימת המילים</p>
   </section>
 
+  <!-- Word Length Cards -->
   <section class="py-8 md:py-12">
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {lengths.map((n) => (
         <a
           href={`/words/${n}-letters`}
@@ -30,35 +37,70 @@ const lengths = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         >
           <span class="text-4xl font-bold text-brand-600 group-hover:text-brand-700 transition-colors block">{n}</span>
           <span class="text-lg font-semibold mt-2 block text-text">אותיות</span>
-          {countByLength[n] && (
-            <span class="text-sm text-muted mt-1 block">
-              {countByLength[n].toLocaleString('he-IL')} מילים
-            </span>
-          )}
+          <span class="text-sm text-muted mt-1 block">
+            {wordCounts[n].toLocaleString('he-IL')} מילים
+          </span>
         </a>
       ))}
     </div>
   </section>
 
+  <!-- Wordle highlight -->
   <section class="py-8 md:py-12 bg-brand-50 border border-brand-100 rounded-xl p-6 md:p-8">
-    <h2 class="text-xl font-semibold mb-4 text-text">שימושים נפוצים</h2>
-    <ul class="space-y-3 text-muted">
-      <li class="flex items-start gap-2">
-        <span class="text-brand-500">•</span>
-        <span><strong class="text-text">2-3 אותיות</strong> - מילות קישור, מילים נפוצות בתשבצים</span>
-      </li>
-      <li class="flex items-start gap-2">
-        <span class="text-brand-500">•</span>
-        <span><strong class="text-text">4-5 אותיות</strong> - מילים רגילות, פתרונות תשבצים</span>
-      </li>
-      <li class="flex items-start gap-2">
-        <span class="text-brand-500">•</span>
-        <span><strong class="text-text">5 אותיות</strong> - משחק וורדל בעברית</span>
-      </li>
-      <li class="flex items-start gap-2">
-        <span class="text-brand-500">•</span>
-        <span><strong class="text-text">6+ אותיות</strong> - מילים מורכבות, ביטויים</span>
-      </li>
-    </ul>
+    <div class="flex flex-col md:flex-row md:items-center gap-6">
+      <div class="flex-1">
+        <h2 class="text-xl font-semibold mb-3 text-text">מילים בנות 5 אותיות לוורדל</h2>
+        <p class="text-muted mb-4">
+          משחק וורדל (Wordle) בעברית דורש מילים בנות 5 אותיות בדיוק.
+          במאגר שלנו {wordCounts[5].toLocaleString('he-IL')} מילים בנות 5 אותיות שיעזרו לך לנצח!
+        </p>
+        <a href="/words/5-letters" class="inline-flex items-center gap-2 bg-brand-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-brand-600 transition-colors shadow-md">
+          צפה ברשימה המלאה
+          <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Usage tips -->
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">שימושים נפוצים</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="p-5 bg-surface border border-border rounded-xl">
+        <h3 class="font-semibold mb-2 text-text">תשבצים</h3>
+        <p class="text-sm text-muted">כשאתה יודע את מספר האותיות של הפתרון, חפש ברשימה המתאימה</p>
+      </div>
+      <div class="p-5 bg-surface border border-border rounded-xl">
+        <h3 class="font-semibold mb-2 text-text">וורדל (Wordle)</h3>
+        <p class="text-sm text-muted">רשימת מילים בנות 5 אותיות - מושלם לניחוש ראשון</p>
+      </div>
+      <div class="p-5 bg-surface border border-border rounded-xl">
+        <h3 class="font-semibold mb-2 text-text">סקראבל</h3>
+        <p class="text-sm text-muted">מילים קצרות (2-3 אותיות) שוות ניקוד גבוה</p>
+      </div>
+      <div class="p-5 bg-surface border border-border rounded-xl">
+        <h3 class="font-semibold mb-2 text-text">כתיבה יצירתית</h3>
+        <p class="text-sm text-muted">גלה מילים חדשות להעשרת אוצר המילים שלך</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cross-links -->
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">כלים נוספים</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <a href="/solver" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">פותר תשבצים</h3>
+        <p class="text-sm text-muted">חפש פתרונות לפי הגדרה או תבנית אותיות</p>
+      </a>
+      <a href="/synonyms" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">מילים נרדפות</h3>
+        <p class="text-sm text-muted">מצא סינונימים לכל מילה בעברית</p>
+      </a>
+      <a href="/rhymes" class="group p-6 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+        <h3 class="font-semibold text-lg mb-2 group-hover:text-brand-600 transition-colors">חרוזים</h3>
+        <p class="text-sm text-muted">מצא חרוז לכל מילה - מלא וחלקי</p>
+      </a>
+    </div>
   </section>
 </BaseLayout>
