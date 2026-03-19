@@ -2,32 +2,53 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabase } from '../../lib/supabase';
 
+// Helper: paginated fetch
+async function fetchAll(table: string, select: string) {
+  const all: any[] = [];
+  const pageSize = 1000;
+  let page = 0;
+  while (true) {
+    const { data } = await supabase.from(table).select(select).range(page * pageSize, (page + 1) * pageSize - 1);
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  return all;
+}
+
 export async function getStaticPaths() {
-  const { data: rhymes } = await supabase
-    .from('rhymes')
-    .select('word');
+  // Bulk fetch ALL rhymes
+  const allRhymes = await fetchAll('rhymes', 'word, rhyme, rhyme_type');
+  console.log(`[rhymes] Fetched ${allRhymes.length} rhyme rows`);
 
-  const uniqueWords = [...new Set(rhymes?.map(r => r.word) || [])];
+  // Group by word
+  const rhymesByWord = new Map<string, { full: string[]; partial: string[] }>();
+  for (const r of allRhymes) {
+    if (!rhymesByWord.has(r.word)) rhymesByWord.set(r.word, { full: [], partial: [] });
+    const group = rhymesByWord.get(r.word)!;
+    if (r.rhyme_type === 'full') group.full.push(r.rhyme);
+    else group.partial.push(r.rhyme);
+  }
 
-  return uniqueWords.map((word) => ({
-    params: { word },
-  }));
+  const uniqueWords = [...rhymesByWord.keys()];
+  console.log(`[rhymes] ${uniqueWords.length} unique words`);
+
+  return uniqueWords.map((word) => {
+    const data = rhymesByWord.get(word)!;
+    return {
+      params: { word },
+      props: { fullRhymes: data.full, partialRhymes: data.partial },
+    };
+  });
 }
 
 const { word } = Astro.params;
-
-// Fetch rhymes for this word
-const { data: rhymes } = await supabase
-  .from('rhymes')
-  .select('*')
-  .eq('word', word);
-
-// Group by rhyme type
-const fullRhymes = rhymes?.filter(r => r.rhyme_type === 'full') || [];
-const partialRhymes = rhymes?.filter(r => r.rhyme_type === 'partial') || [];
+const { fullRhymes, partialRhymes } = Astro.props;
+const totalRhymes = (fullRhymes?.length || 0) + (partialRhymes?.length || 0);
 
 const pageTitle = `חרוזים ל"${word}" | מילון חרוזים בעברית`;
-const pageDescription = `${rhymes?.length || 0} חרוזים למילה "${word}". חרוזים מלאים וחלקיים לשירים, ברכות וכתיבה יצירתית.`;
+const pageDescription = `${totalRhymes} חרוזים למילה "${word}". חרוזים מלאים וחלקיים לשירים, ברכות וכתיבה יצירתית.`;
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>
@@ -44,42 +65,42 @@ const pageDescription = `${rhymes?.length || 0} חרוזים למילה "${word}
       חרוזים ל"{word}"
     </h1>
     <p class="text-muted mb-8">
-      {rhymes?.length || 0} חרוזים נמצאו
+      {totalRhymes} חרוזים נמצאו
     </p>
 
-    {fullRhymes.length > 0 && (
+    {fullRhymes && fullRhymes.length > 0 && (
       <section class="bg-surface border border-border rounded-xl p-6 mb-6">
         <h2 class="text-xl font-semibold mb-4 text-text">חרוזים מלאים</h2>
         <div class="flex flex-wrap gap-3">
-          {fullRhymes.map((r) => (
+          {fullRhymes.map((r: string) => (
             <a
-              href={`/rhymes/${r.rhyme}`}
+              href={`/rhymes/${r}`}
               class="px-4 py-2 bg-brand-100 text-brand-700 rounded-full hover:bg-brand-200 transition-all font-medium"
             >
-              {r.rhyme}
+              {r}
             </a>
           ))}
         </div>
       </section>
     )}
 
-    {partialRhymes.length > 0 && (
+    {partialRhymes && partialRhymes.length > 0 && (
       <section class="bg-surface border border-border rounded-xl p-6">
         <h2 class="text-xl font-semibold mb-4 text-text">חרוזים חלקיים</h2>
         <div class="flex flex-wrap gap-3">
-          {partialRhymes.map((r) => (
+          {partialRhymes.map((r: string) => (
             <a
-              href={`/rhymes/${r.rhyme}`}
+              href={`/rhymes/${r}`}
               class="px-4 py-2 bg-brand-50 text-brand-600 border border-brand-200 rounded-full hover:bg-brand-100 transition-all"
             >
-              {r.rhyme}
+              {r}
             </a>
           ))}
         </div>
       </section>
     )}
 
-    {(!rhymes || rhymes.length === 0) && (
+    {totalRhymes === 0 && (
       <div class="bg-brand-50 border border-brand-100 rounded-xl p-8 text-center">
         <p class="text-muted">לא נמצאו חרוזים למילה זו.</p>
       </div>

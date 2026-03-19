@@ -1,71 +1,71 @@
 ---
-// Build: 2026-03-17 v5 - 4545 definitions, 66681 solutions, keyword research complete
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SearchAutocomplete from '../../components/SearchAutocomplete.astro';
 import { supabase } from '../../lib/supabase';
 
-export async function getStaticPaths() {
-  // Fetch ALL definitions - pages without solutions show "no solutions yet"
-  const allDefinitions: { slug: string }[] = [];
+// Helper: paginated fetch
+async function fetchAll(table: string, select: string, orderBy?: string) {
+  const all: any[] = [];
   const pageSize = 1000;
   let page = 0;
-  let hasMore = true;
+  while (true) {
+    let q = supabase.from(table).select(select).range(page * pageSize, (page + 1) * pageSize - 1);
+    if (orderBy) q = q.order(orderBy);
+    const { data } = await q;
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  return all;
+}
 
-  while (hasMore) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
+export async function getStaticPaths() {
+  // Bulk fetch ALL definitions
+  const allDefs = await fetchAll('crossword_definitions', 'id, slug, definition_he, category');
+  console.log(`[getStaticPaths] Fetched ${allDefs.length} definitions`);
 
-    const { data } = await supabase
-      .from('crossword_definitions')
-      .select('slug')
-      .range(from, to);
+  // Bulk fetch ALL solutions
+  const allSols = await fetchAll('crossword_solutions', 'definition_id, solution, letter_count, explanation');
+  console.log(`[getStaticPaths] Fetched ${allSols.length} solutions`);
 
-    if (data && data.length > 0) {
-      allDefinitions.push(...data.map(d => ({ slug: d.slug })));
-      hasMore = data.length === pageSize;
-      page++;
-    } else {
-      hasMore = false;
+  // Group solutions by definition_id
+  const solsByDefId = new Map<string, any[]>();
+  for (const sol of allSols) {
+    if (!solsByDefId.has(sol.definition_id)) solsByDefId.set(sol.definition_id, []);
+    solsByDefId.get(sol.definition_id)!.push(sol);
+  }
+
+  // Group definitions by category for "related"
+  const defsByCat = new Map<string, any[]>();
+  for (const def of allDefs) {
+    if (def.category) {
+      if (!defsByCat.has(def.category)) defsByCat.set(def.category, []);
+      defsByCat.get(def.category)!.push({ slug: def.slug, definition_he: def.definition_he });
     }
   }
 
-  console.log(`[getStaticPaths] Fetched ${allDefinitions.length} definitions (all)`);
+  return allDefs.map((def) => {
+    const solutions = (solsByDefId.get(def.id) || []).sort((a: any, b: any) => a.letter_count - b.letter_count);
+    const catDefs = defsByCat.get(def.category) || [];
+    const relatedDefs = catDefs.filter((d: any) => d.slug !== def.slug).slice(0, 8);
 
-  return allDefinitions.map((def) => ({
-    params: { slug: def.slug },
-  }));
+    return {
+      params: { slug: def.slug },
+      props: { definition: def, solutions, relatedDefs },
+    };
+  });
 }
 
-const { slug } = Astro.params;
-
-// Fetch definition and solutions
-const { data: definition } = await supabase
-  .from('crossword_definitions')
-  .select('*')
-  .eq('slug', slug)
-  .single();
-
-const { data: solutions } = await supabase
-  .from('crossword_solutions')
-  .select('*')
-  .eq('definition_id', definition?.id)
-  .order('letter_count');
+const { definition, solutions, relatedDefs } = Astro.props;
 
 // Group solutions by letter count
-const solutionsByLength = solutions?.reduce((acc, sol) => {
+const solutionsByLength = solutions?.reduce((acc: any, sol: any) => {
   const key = sol.letter_count;
   if (!acc[key]) acc[key] = [];
   acc[key].push(sol);
   return acc;
-}, {} as Record<number, typeof solutions>) || {};
-
-// Fetch related definitions
-const { data: relatedDefs } = await supabase
-  .from('crossword_definitions')
-  .select('slug, definition_he')
-  .eq('category', definition?.category)
-  .neq('slug', slug)
-  .limit(8);
+}, {} as Record<number, any[]>) || {};
 
 const pageTitle = `${definition?.definition_he} - פתרון תשבץ`;
 const pageDescription = `${solutions?.length || 0} פתרונות להגדרה "${definition?.definition_he}" בתשבץ. צפה בפתרונות לפי מספר אותיות ומצא את המילה המתאימה.`;
@@ -131,7 +131,7 @@ const pageSchema = [breadcrumbSchema, definitionSchema];
                 פתרונות של {length} אותיות
               </h2>
               <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {sols.map((sol) => (
+                {(sols as any[]).map((sol) => (
                   <div class="p-4 bg-brand-50 border border-brand-100 rounded-lg">
                     <span class="font-semibold text-lg text-brand-700">{sol.solution}</span>
                     {sol.explanation && (
@@ -154,7 +154,7 @@ const pageSchema = [breadcrumbSchema, definitionSchema];
       <section class="mt-12">
         <h2 class="text-2xl font-bold mb-6 text-text">הגדרות קשורות</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {relatedDefs.map((def) => (
+          {relatedDefs.map((def: any) => (
             <a
               href={`/definition/${def.slug}`}
               class="group p-4 bg-surface border border-border rounded-lg hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"

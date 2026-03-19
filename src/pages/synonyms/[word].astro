@@ -2,40 +2,54 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabase } from '../../lib/supabase';
 
-export async function getStaticPaths() {
-  // Fetch all unique words (paginated since >1000)
-  const allWords: string[] = [];
-  let offset = 0;
-  const batchSize = 1000;
+// Helper: paginated fetch
+async function fetchAll(table: string, select: string) {
+  const all: any[] = [];
+  const pageSize = 1000;
+  let page = 0;
   while (true) {
-    const { data } = await supabase
-      .from('matzati_synonyms')
-      .select('word')
-      .range(offset, offset + batchSize - 1);
+    const { data } = await supabase.from(table).select(select).range(page * pageSize, (page + 1) * pageSize - 1);
     if (!data || data.length === 0) break;
-    data.forEach(s => allWords.push(s.word));
-    offset += batchSize;
-    if (data.length < batchSize) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    page++;
   }
-  const uniqueWords = [...new Set(allWords)];
+  return all;
+}
+
+export async function getStaticPaths() {
+  // Bulk fetch ALL synonyms
+  const allSynonyms = await fetchAll('matzati_synonyms', 'word, synonym');
+  console.log(`[synonyms] Fetched ${allSynonyms.length} synonym rows`);
+
+  // Group by word
+  const synByWord = new Map<string, string[]>();
+  for (const s of allSynonyms) {
+    if (!synByWord.has(s.word)) synByWord.set(s.word, []);
+    synByWord.get(s.word)!.push(s.synonym);
+  }
+
+  // Build reverse map for "related words" (words that list this word as synonym)
+  const reverseMap = new Map<string, string[]>();
+  for (const s of allSynonyms) {
+    if (!reverseMap.has(s.synonym)) reverseMap.set(s.synonym, []);
+    reverseMap.get(s.synonym)!.push(s.word);
+  }
+
+  const uniqueWords = [...synByWord.keys()];
+  console.log(`[synonyms] ${uniqueWords.length} unique words`);
+
   return uniqueWords.map((word) => ({
     params: { word },
+    props: {
+      synonyms: synByWord.get(word) || [],
+      relatedWords: [...new Set(reverseMap.get(word) || [])].slice(0, 12),
+    },
   }));
 }
 
 const { word } = Astro.params;
-
-// Fetch synonyms for this word
-const { data: synonyms } = await supabase
-  .from('matzati_synonyms')
-  .select('*')
-  .eq('word', word);
-
-// Fetch antonyms (reverse lookup)
-const { data: antonyms } = await supabase
-  .from('matzati_synonyms')
-  .select('word')
-  .eq('synonym', word);
+const { synonyms, relatedWords } = Astro.props;
 
 const pageTitle = `מילים נרדפות ל"${word}" | סינונימים בעברית`;
 const pageDescription = `${synonyms?.length || 0} מילים נרדפות למילה "${word}". גלה סינונימים ומילים קשורות לשימוש בכתיבה ותשבצים.`;
@@ -62,12 +76,12 @@ const pageDescription = `${synonyms?.length || 0} מילים נרדפות למי
       <section class="bg-surface border border-border rounded-xl p-6 mb-8">
         <h2 class="text-xl font-semibold mb-4 text-text">מילים נרדפות</h2>
         <div class="flex flex-wrap gap-3">
-          {synonyms.map((syn) => (
+          {synonyms.map((syn: string) => (
             <a
-              href={`/synonyms/${syn.synonym}`}
+              href={`/synonyms/${syn}`}
               class="px-4 py-2 bg-brand-100 text-brand-700 rounded-full hover:bg-brand-200 transition-all font-medium"
             >
-              {syn.synonym}
+              {syn}
             </a>
           ))}
         </div>
@@ -78,16 +92,16 @@ const pageDescription = `${synonyms?.length || 0} מילים נרדפות למי
       </div>
     )}
 
-    {antonyms && antonyms.length > 0 && (
+    {relatedWords && relatedWords.length > 0 && (
       <section class="bg-surface border border-border rounded-xl p-6">
         <h2 class="text-xl font-semibold mb-4 text-text">מילים קשורות</h2>
         <div class="flex flex-wrap gap-3">
-          {antonyms.map((ant) => (
+          {relatedWords.map((w: string) => (
             <a
-              href={`/synonyms/${ant.word}`}
+              href={`/synonyms/${w}`}
               class="px-4 py-2 bg-brand-50 text-brand-600 border border-brand-200 rounded-full hover:bg-brand-100 transition-all"
             >
-              {ant.word}
+              {w}
             </a>
           ))}
         </div>
