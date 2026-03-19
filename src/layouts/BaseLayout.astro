@@ -109,29 +109,105 @@ const websiteSchema = {
       <slot />
     </main>
 
-    <footer class="bg-surface border-t border-border mt-auto">
-      <div class="max-w-6xl mx-auto px-4 py-8">
-        <!-- Footer nav -->
-        <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6">
-          <a href="/solver" class="text-muted hover:text-brand-600 transition-colors">פותר תשבצים</a>
-          <a href="/synonyms" class="text-muted hover:text-brand-600 transition-colors">מילים נרדפות</a>
-          <a href="/rhymes" class="text-muted hover:text-brand-600 transition-colors">חרוזים</a>
-          <a href="/words" class="text-muted hover:text-brand-600 transition-colors">מילים</a>
+    <footer class="bg-gradient-to-b from-brand-900 via-brand-950 to-brand-950 text-gray-300 mt-auto relative overflow-hidden">
+      <!-- Background Decorations -->
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute top-0 start-0 w-[400px] h-[400px] bg-brand-500/5 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-0 end-0 w-[300px] h-[300px] bg-accent-500/5 rounded-full blur-[100px]"></div>
+      </div>
+
+      <div class="max-w-6xl mx-auto px-4 py-12 relative z-10">
+        <!-- Stats Strip -->
+        <div class="grid grid-cols-3 gap-4 mb-10 p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10">
+          <div class="text-center">
+            <div class="text-2xl md:text-3xl font-bold text-accent-400">88,134</div>
+            <div class="text-sm text-gray-400">פתרונות תשבצים</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl md:text-3xl font-bold text-accent-400">56,341</div>
+            <div class="text-sm text-gray-400">מילים נרדפות</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl md:text-3xl font-bold text-accent-400">40,508</div>
+            <div class="text-sm text-gray-400">חרוזים</div>
+          </div>
         </div>
 
-        <!-- Legal links -->
-        <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm mb-4">
-          <a href="/terms" class="text-muted hover:text-brand-600 transition-colors">תנאי שימוש</a>
-          <span class="text-border">|</span>
-          <a href="/privacy" class="text-muted hover:text-brand-600 transition-colors">מדיניות פרטיות</a>
-          <span class="text-border">|</span>
-          <a href="/accessibility" class="text-muted hover:text-brand-600 transition-colors">הצהרת נגישות</a>
+        <!-- 4-Column Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+          <!-- Column 1: Brand -->
+          <div>
+            <a href="/" class="inline-block mb-4">
+              <img src="/logo.svg" alt="מצאתי" height="48" class="h-12 brightness-0 invert" />
+            </a>
+            <p class="text-sm text-gray-400 mb-5">מאגר פתרונות התשבצים, מילים נרדפות וחרוזים הגדול בישראל. חינם ובעברית.</p>
+            <!-- Trust Badges -->
+            <div class="flex flex-wrap gap-2">
+              <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs">
+                <svg class="w-4 h-4 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /></svg>
+                <span class="text-white">10,003 הגדרות</span>
+              </div>
+              <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs">
+                <svg class="w-4 h-4 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="text-white">חינם לשימוש</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Tools -->
+          <div>
+            <h4 class="text-white text-sm font-semibold mb-4 flex items-center gap-2">
+              <svg class="w-4 h-4 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              כלים
+            </h4>
+            <ul class="space-y-2.5 text-sm">
+              <li><a href="/solver" class="hover:text-white transition-colors">פותר תשבצים</a></li>
+              <li><a href="/synonyms" class="hover:text-white transition-colors">מילון מילים נרדפות</a></li>
+              <li><a href="/rhymes" class="hover:text-white transition-colors">מילון חרוזים</a></li>
+              <li><a href="/words" class="hover:text-white transition-colors">מילים לפי אורך</a></li>
+              <li><a href="/words/5-letters" class="hover:text-white transition-colors">מילים בנות 5 אותיות</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 3: Categories -->
+          <div>
+            <h4 class="text-white text-sm font-semibold mb-4 flex items-center gap-2">
+              <svg class="w-4 h-4 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+              קטגוריות תשבצים
+            </h4>
+            <ul class="space-y-2.5 text-sm">
+              <li><a href="/category/general" class="hover:text-white transition-colors">ידע כללי</a></li>
+              <li><a href="/category/language" class="hover:text-white transition-colors">שפה ומילים</a></li>
+              <li><a href="/category/food" class="hover:text-white transition-colors">אוכל ומשקאות</a></li>
+              <li><a href="/category/science" class="hover:text-white transition-colors">מדעים</a></li>
+              <li><a href="/category/geography" class="hover:text-white transition-colors">גיאוגרפיה</a></li>
+              <li><a href="/category/animals" class="hover:text-white transition-colors">בעלי חיים</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 4: About -->
+          <div>
+            <h4 class="text-white text-sm font-semibold mb-4 flex items-center gap-2">
+              <svg class="w-4 h-4 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              מידע
+            </h4>
+            <ul class="space-y-2.5 text-sm">
+              <li><a href="/about" class="hover:text-white transition-colors">אודות מצאתי</a></li>
+              <li><a href="/terms" class="hover:text-white transition-colors">תנאי שימוש</a></li>
+              <li><a href="/privacy" class="hover:text-white transition-colors">מדיניות פרטיות</a></li>
+              <li><a href="/accessibility" class="hover:text-white transition-colors">הצהרת נגישות</a></li>
+            </ul>
+          </div>
         </div>
 
-        <!-- Copyright -->
-        <p class="text-center text-muted text-sm">
-          &copy; {new Date().getFullYear()} מצאתי - פתרונות תשבצים בעברית
-        </p>
+        <!-- Gradient Separator -->
+        <div class="h-px bg-gradient-to-r from-transparent via-accent-500/30 to-transparent mb-6"></div>
+
+        <!-- Bottom Bar -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
+          <p>&copy; {new Date().getFullYear()} מצאתי. כל הזכויות שמורות.</p>
+          <p class="text-xs text-center md:text-start">המידע באתר מוצג לשימוש כללי בלבד. הנתונים נאספים ממקורות שונים ועשויים להשתנות.</p>
+        </div>
       </div>
     </footer>
   </body>
