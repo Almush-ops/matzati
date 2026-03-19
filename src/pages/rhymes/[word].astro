@@ -17,21 +17,46 @@ export async function getStaticPaths() {
     else group.partial.push(r.rhyme);
   }
 
+  // Set of all valid words (words that have their own page)
+  const validWords = new Set(rhymesByWord.keys());
+
   const uniqueWords = [...rhymesByWord.keys()];
   console.log(`[rhymes] ${uniqueWords.length} unique words`);
 
+  // stripNikud inline for getStaticPaths scope
+  const strip = (text: string) => text.replace(/[\u0591-\u05C7]/g, '');
+
   return uniqueWords.map((word) => {
     const data = rhymesByWord.get(word)!;
+
+    // Split full rhymes into linked and plain
+    const linkedFull: string[] = [];
+    const plainFull: string[] = [];
+    for (const r of data.full) {
+      if (validWords.has(strip(r))) linkedFull.push(r);
+      else plainFull.push(r);
+    }
+
+    // Split partial rhymes into linked and plain
+    const linkedPartial: string[] = [];
+    const plainPartial: string[] = [];
+    for (const r of data.partial) {
+      if (validWords.has(strip(r))) linkedPartial.push(r);
+      else plainPartial.push(r);
+    }
+
     return {
       params: { word },
-      props: { fullRhymes: data.full, partialRhymes: data.partial },
+      props: { linkedFull, plainFull, linkedPartial, plainPartial },
     };
   });
 }
 
 const { word } = Astro.params;
-const { fullRhymes, partialRhymes } = Astro.props;
-const totalRhymes = (fullRhymes?.length || 0) + (partialRhymes?.length || 0);
+const { linkedFull, plainFull, linkedPartial, plainPartial } = Astro.props;
+const totalFull = (linkedFull?.length || 0) + (plainFull?.length || 0);
+const totalPartial = (linkedPartial?.length || 0) + (plainPartial?.length || 0);
+const totalRhymes = totalFull + totalPartial;
 
 const pageTitle = `חרוזים ל"${word}" | מילון חרוזים בעברית`;
 const pageDescription = `${totalRhymes} חרוזים למילה "${word}". חרוזים מלאים וחלקיים לשירים, ברכות וכתיבה יצירתית.`;
@@ -54,11 +79,11 @@ const pageDescription = `${totalRhymes} חרוזים למילה "${word}". חר�
       {totalRhymes} חרוזים נמצאו
     </p>
 
-    {fullRhymes && fullRhymes.length > 0 && (
+    {totalFull > 0 && (
       <section class="bg-surface border border-border rounded-xl p-6 mb-6">
         <h2 class="text-xl font-semibold mb-4 text-text">חרוזים מלאים</h2>
         <div class="flex flex-wrap gap-3">
-          {fullRhymes.map((r: string) => (
+          {linkedFull.map((r: string) => (
             <a
               href={`/rhymes/${stripNikud(r)}`}
               class="px-4 py-2 bg-brand-100 text-brand-700 rounded-full hover:bg-brand-200 transition-all font-medium"
@@ -66,21 +91,31 @@ const pageDescription = `${totalRhymes} חרוזים למילה "${word}". חר�
               {r}
             </a>
           ))}
+          {plainFull.map((r: string) => (
+            <span class="px-4 py-2 bg-brand-50 text-brand-600 rounded-full">
+              {r}
+            </span>
+          ))}
         </div>
       </section>
     )}
 
-    {partialRhymes && partialRhymes.length > 0 && (
+    {totalPartial > 0 && (
       <section class="bg-surface border border-border rounded-xl p-6">
         <h2 class="text-xl font-semibold mb-4 text-text">חרוזים חלקיים</h2>
         <div class="flex flex-wrap gap-3">
-          {partialRhymes.map((r: string) => (
+          {linkedPartial.map((r: string) => (
             <a
               href={`/rhymes/${stripNikud(r)}`}
               class="px-4 py-2 bg-brand-50 text-brand-600 border border-brand-200 rounded-full hover:bg-brand-100 transition-all"
             >
               {r}
             </a>
+          ))}
+          {plainPartial.map((r: string) => (
+            <span class="px-4 py-2 bg-brand-50/50 text-muted border border-border rounded-full">
+              {r}
+            </span>
           ))}
         </div>
       </section>

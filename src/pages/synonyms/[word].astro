@@ -22,23 +22,47 @@ export async function getStaticPaths() {
     reverseMap.get(s.synonym)!.push(s.word);
   }
 
+  // Set of all valid words (words that have their own page)
+  const validWords = new Set(synByWord.keys());
+
   const uniqueWords = [...synByWord.keys()];
   console.log(`[synonyms] ${uniqueWords.length} unique words`);
 
-  return uniqueWords.map((word) => ({
-    params: { word },
-    props: {
-      synonyms: synByWord.get(word) || [],
-      relatedWords: [...new Set(reverseMap.get(word) || [])].slice(0, 12),
-    },
-  }));
+  // stripNikud helper inline (can't use import in getStaticPaths scope easily)
+  const strip = (text: string) => text.replace(/[\u0591-\u05C7]/g, '');
+
+  return uniqueWords.map((word) => {
+    const allSyns = synByWord.get(word) || [];
+    const allRelated = [...new Set(reverseMap.get(word) || [])].slice(0, 12);
+
+    // Split synonyms into linked (have page) and plain (no page)
+    const linkedSynonyms: string[] = [];
+    const plainSynonyms: string[] = [];
+    for (const syn of allSyns) {
+      if (validWords.has(strip(syn))) {
+        linkedSynonyms.push(syn);
+      } else {
+        plainSynonyms.push(syn);
+      }
+    }
+
+    // Related words are already word-column values, so they always have pages
+    // But filter to be safe
+    const linkedRelated = allRelated.filter(w => validWords.has(strip(w)));
+
+    return {
+      params: { word },
+      props: { linkedSynonyms, plainSynonyms, linkedRelated },
+    };
+  });
 }
 
 const { word } = Astro.params;
-const { synonyms, relatedWords } = Astro.props;
+const { linkedSynonyms, plainSynonyms, linkedRelated } = Astro.props;
+const totalSynonyms = (linkedSynonyms?.length || 0) + (plainSynonyms?.length || 0);
 
 const pageTitle = `מילים נרדפות ל"${word}" | סינונימים בעברית`;
-const pageDescription = `${synonyms?.length || 0} מילים נרדפות למילה "${word}". גלה סינונימים ומילים קשורות לשימוש בכתיבה ותשבצים.`;
+const pageDescription = `${totalSynonyms} מילים נרדפות למילה "${word}". גלה סינונימים ומילים קשורות לשימוש בכתיבה ותשבצים.`;
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>
@@ -55,20 +79,25 @@ const pageDescription = `${synonyms?.length || 0} מילים נרדפות למי
       מילים נרדפות ל"{word}"
     </h1>
     <p class="text-muted mb-8">
-      {synonyms?.length || 0} מילים נרדפות נמצאו
+      {totalSynonyms} מילים נרדפות נמצאו
     </p>
 
-    {synonyms && synonyms.length > 0 ? (
+    {totalSynonyms > 0 ? (
       <section class="bg-surface border border-border rounded-xl p-6 mb-8">
         <h2 class="text-xl font-semibold mb-4 text-text">מילים נרדפות</h2>
         <div class="flex flex-wrap gap-3">
-          {synonyms.map((syn: string) => (
+          {linkedSynonyms.map((syn: string) => (
             <a
               href={`/synonyms/${stripNikud(syn)}`}
               class="px-4 py-2 bg-brand-100 text-brand-700 rounded-full hover:bg-brand-200 transition-all font-medium"
             >
               {syn}
             </a>
+          ))}
+          {plainSynonyms.map((syn: string) => (
+            <span class="px-4 py-2 bg-brand-50 text-brand-600 rounded-full">
+              {syn}
+            </span>
           ))}
         </div>
       </section>
@@ -78,11 +107,11 @@ const pageDescription = `${synonyms?.length || 0} מילים נרדפות למי
       </div>
     )}
 
-    {relatedWords && relatedWords.length > 0 && (
+    {linkedRelated && linkedRelated.length > 0 && (
       <section class="bg-surface border border-border rounded-xl p-6">
         <h2 class="text-xl font-semibold mb-4 text-text">מילים קשורות</h2>
         <div class="flex flex-wrap gap-3">
-          {relatedWords.map((w: string) => (
+          {linkedRelated.map((w: string) => (
             <a
               href={`/synonyms/${stripNikud(w)}`}
               class="px-4 py-2 bg-brand-50 text-brand-600 border border-brand-200 rounded-full hover:bg-brand-100 transition-all"
