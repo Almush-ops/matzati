@@ -6,9 +6,12 @@ import { supabase } from '../../lib/supabase';
 const { data: rhymeWords } = await supabase
   .from('rhymes')
   .select('word')
-  .limit(100);
+  .limit(2000);
 
-const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
+const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])].sort();
+
+// Hebrew letters for the filter
+const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
 ---
 
 <BaseLayout title="חרוזים בעברית | מילון חרוזים לשירים וברכות" description="מילון חרוזים בעברית - מצא חרוזים מלאים וחלקיים לכל מילה. מושלם לכתיבת שירים, ברכות וטקסטים יצירתיים.">
@@ -34,12 +37,28 @@ const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
     </form>
   </section>
 
+  <!-- Alphabetical Index -->
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">חיפוש לפי אות</h2>
+    <div id="letter-filter" class="flex flex-wrap gap-2 justify-center">
+      {hebrewLetters.map((letter) => (
+        <button
+          type="button"
+          data-letter={letter}
+          class="letter-btn w-12 h-12 flex items-center justify-center bg-surface border border-border rounded-lg text-xl font-bold hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 transition-all cursor-pointer"
+        >
+          {letter}
+        </button>
+      ))}
+    </div>
+  </section>
+
   <!-- Results container -->
   <section id="results-section" class="py-8 md:py-12 hidden">
     <div class="flex items-center justify-between mb-6">
       <h2 id="results-title" class="text-xl font-semibold text-text"></h2>
-      <button id="clear-search" class="text-brand-600 hover:text-brand-700 underline text-sm">
-        נקה חיפוש
+      <button id="clear-filter" class="text-brand-600 hover:text-brand-700 underline text-sm">
+        נקה סינון
       </button>
     </div>
     <div id="results-container"></div>
@@ -55,7 +74,7 @@ const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
   <section id="popular-section" class="py-8 md:py-12">
     <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-      {uniqueWords.slice(0, 24).map((word) => (
+      {uniqueWords.slice(0, 48).map((word) => (
         <a
           href={`/rhymes/${word}`}
           class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
@@ -100,34 +119,43 @@ const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
   const resultsContainer = document.getElementById('results-container')!;
   const popularSection = document.getElementById('popular-section')!;
   const loading = document.getElementById('loading')!;
-  const clearBtn = document.getElementById('clear-search')!;
+  const clearBtn = document.getElementById('clear-filter')!;
+  const letterBtns = document.querySelectorAll('.letter-btn');
 
-  async function search(query: string) {
+  function showResults() {
+    resultsSection.classList.remove('hidden');
+    popularSection.classList.add('hidden');
+  }
+
+  function hideResults() {
+    resultsSection.classList.add('hidden');
+    popularSection.classList.remove('hidden');
+    letterBtns.forEach(btn => btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500'));
+  }
+
+  async function searchByQuery(query: string) {
     if (!query.trim()) return;
 
-    // Update URL
     const url = new URL(window.location.href);
+    url.searchParams.delete('letter');
     url.searchParams.set('q', query);
     window.history.pushState({}, '', url);
 
-    // Show loading
     loading.classList.remove('hidden');
     popularSection.classList.add('hidden');
     resultsSection.classList.add('hidden');
 
     try {
-      // Search for rhymes
       const { data: results } = await supabase
         .from('rhymes')
         .select('word, rhyme, rhyme_type')
         .or(`word.ilike.%${query}%,rhyme.ilike.%${query}%`)
-        .limit(30);
+        .limit(50);
 
-      // Get unique words from results
       const uniqueWords = [...new Set(results?.map(r => r.word) || [])];
 
       loading.classList.add('hidden');
-      resultsSection.classList.remove('hidden');
+      showResults();
       resultsTitle.textContent = `תוצאות עבור "${query}" (${uniqueWords.length} נמצאו)`;
 
       if (uniqueWords.length > 0) {
@@ -152,7 +180,7 @@ const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
     } catch (error) {
       console.error('Search error:', error);
       loading.classList.add('hidden');
-      resultsSection.classList.remove('hidden');
+      showResults();
       resultsTitle.textContent = 'שגיאה בחיפוש';
       resultsContainer.innerHTML = `
         <div class="bg-red-50 rounded-xl p-8 text-center border border-red-100">
@@ -162,25 +190,98 @@ const uniqueWords = [...new Set(rhymeWords?.map(r => r.word) || [])];
     }
   }
 
+  async function filterByLetter(letter: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('q');
+    url.searchParams.set('letter', letter);
+    window.history.pushState({}, '', url);
+
+    letterBtns.forEach(btn => {
+      if (btn.getAttribute('data-letter') === letter) {
+        btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
+      } else {
+        btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+      }
+    });
+
+    loading.classList.remove('hidden');
+    popularSection.classList.add('hidden');
+    resultsSection.classList.add('hidden');
+
+    try {
+      const { data: results } = await supabase
+        .from('rhymes')
+        .select('word')
+        .ilike('word', `${letter}%`)
+        .limit(500);
+
+      const uniqueWords = [...new Set(results?.map(r => r.word) || [])];
+
+      loading.classList.add('hidden');
+      showResults();
+      resultsTitle.textContent = `מילים המתחילות ב"${letter}" (${uniqueWords.length} נמצאו)`;
+
+      if (uniqueWords.length > 0) {
+        resultsContainer.innerHTML = `
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            ${uniqueWords.map((word: string) => `
+              <a href="/rhymes/${encodeURIComponent(word)}"
+                 class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md transition-all">
+                <span class="group-hover:text-brand-600 transition-colors">${word}</span>
+              </a>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        resultsContainer.innerHTML = `
+          <div class="bg-brand-50 rounded-xl p-8 text-center border border-brand-100">
+            <p class="text-muted">לא נמצאו מילים המתחילות ב"${letter}"</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Filter error:', error);
+      loading.classList.add('hidden');
+      showResults();
+      resultsTitle.textContent = 'שגיאה בסינון';
+      resultsContainer.innerHTML = `
+        <div class="bg-red-50 rounded-xl p-8 text-center border border-red-100">
+          <p class="text-red-600">אירעה שגיאה. נסה שוב.</p>
+        </div>
+      `;
+    }
+  }
+
   // Handle form submit
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    search(input.value);
+    searchByQuery(input.value);
+  });
+
+  // Handle letter button clicks
+  letterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const letter = btn.getAttribute('data-letter');
+      if (letter) filterByLetter(letter);
+    });
   });
 
   // Handle clear button
   clearBtn.addEventListener('click', () => {
     input.value = '';
-    resultsSection.classList.add('hidden');
-    popularSection.classList.remove('hidden');
+    hideResults();
     window.history.pushState({}, '', '/rhymes');
   });
 
-  // Check URL for query on page load
+  // Check URL for query/letter on page load
   const urlParams = new URLSearchParams(window.location.search);
   const initialQuery = urlParams.get('q');
+  const initialLetter = urlParams.get('letter');
+
   if (initialQuery) {
     input.value = initialQuery;
-    search(initialQuery);
+    searchByQuery(initialQuery);
+  } else if (initialLetter) {
+    filterByLetter(initialLetter);
   }
 </script>

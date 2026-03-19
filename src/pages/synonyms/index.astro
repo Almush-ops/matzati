@@ -2,13 +2,13 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabase } from '../../lib/supabase';
 
-// Get unique words with synonyms (static, at build time)
+// Get popular words with synonyms (static, at build time)
 const { data: words } = await supabase
-  .from('synonyms')
+  .from('matzati_synonyms')
   .select('word')
-  .limit(100);
+  .limit(1000);
 
-const uniqueWords = [...new Set(words?.map(w => w.word) || [])];
+const uniqueWords = [...new Set(words?.map(w => w.word) || [])].sort();
 
 // Hebrew letters for the filter
 const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
@@ -74,7 +74,7 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
   <section id="popular-section" class="py-8 md:py-12">
     <h2 class="text-2xl font-bold mb-6 text-text">מילים פופולריות</h2>
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-      {uniqueWords.slice(0, 24).map((word) => (
+      {uniqueWords.slice(0, 48).map((word) => (
         <a
           href={`/synonyms/${word}`}
           class="group p-4 bg-surface border border-border rounded-lg text-center hover:border-brand-300 hover:shadow-md hover:shadow-brand-500/10 transition-all"
@@ -132,10 +132,10 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     try {
       // Search for words that match
       const { data: results } = await supabase
-        .from('synonyms')
-        .select('word, synonym, relation_type')
+        .from('matzati_synonyms')
+        .select('word, synonym')
         .or(`word.ilike.%${query}%,synonym.ilike.%${query}%`)
-        .limit(30);
+        .limit(50);
 
       // Get unique words from results
       const uniqueWords = [...new Set(results?.map(r => r.word) || [])];
@@ -200,10 +200,10 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
     try {
       // Get words starting with this letter
       const { data: results } = await supabase
-        .from('synonyms')
+        .from('matzati_synonyms')
         .select('word')
         .ilike('word', `${letter}%`)
-        .limit(50);
+        .limit(500);
 
       // Get unique words
       const uniqueWords = [...new Set(results?.map(r => r.word) || [])];

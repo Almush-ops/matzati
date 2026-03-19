@@ -3,12 +3,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabase } from '../../lib/supabase';
 
 export async function getStaticPaths() {
-  const { data: synonyms } = await supabase
-    .from('synonyms')
-    .select('word');
-
-  const uniqueWords = [...new Set(synonyms?.map(s => s.word) || [])];
-
+  // Fetch all unique words (paginated since >1000)
+  const allWords: string[] = [];
+  let offset = 0;
+  const batchSize = 1000;
+  while (true) {
+    const { data } = await supabase
+      .from('matzati_synonyms')
+      .select('word')
+      .range(offset, offset + batchSize - 1);
+    if (!data || data.length === 0) break;
+    data.forEach(s => allWords.push(s.word));
+    offset += batchSize;
+    if (data.length < batchSize) break;
+  }
+  const uniqueWords = [...new Set(allWords)];
   return uniqueWords.map((word) => ({
     params: { word },
   }));
@@ -18,13 +27,13 @@ const { word } = Astro.params;
 
 // Fetch synonyms for this word
 const { data: synonyms } = await supabase
-  .from('synonyms')
+  .from('matzati_synonyms')
   .select('*')
   .eq('word', word);
 
 // Fetch antonyms (reverse lookup)
 const { data: antonyms } = await supabase
-  .from('synonyms')
+  .from('matzati_synonyms')
   .select('word')
   .eq('synonym', word);
 
@@ -59,9 +68,6 @@ const pageDescription = `${synonyms?.length || 0} מילים נרדפות למי
               class="px-4 py-2 bg-brand-100 text-brand-700 rounded-full hover:bg-brand-200 transition-all font-medium"
             >
               {syn.synonym}
-              {syn.relation_type === 'exact' && (
-                <span class="text-xs mr-1 text-brand-500">(מדויק)</span>
-              )}
             </a>
           ))}
         </div>
