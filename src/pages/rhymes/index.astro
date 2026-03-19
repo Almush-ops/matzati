@@ -1,26 +1,33 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { supabase } from '../../lib/supabase';
 
-// Get popular words (most rhymes) at build time
-const { data: rhymeData } = await supabase
-  .from('rhymes')
-  .select('word, rhyme_type')
-  .limit(5000);
-
-// Count rhymes per word and get top ones
-const rhymeCounts: Record<string, { total: number; full: number; partial: number }> = {};
-rhymeData?.forEach(r => {
-  if (!rhymeCounts[r.word]) rhymeCounts[r.word] = { total: 0, full: 0, partial: 0 };
-  rhymeCounts[r.word].total++;
-  if (r.rhyme_type === 'full') rhymeCounts[r.word].full++;
-  else rhymeCounts[r.word].partial++;
-});
-
-const popularWords = Object.entries(rhymeCounts)
-  .sort((a, b) => b[1].total - a[1].total)
-  .slice(0, 48)
-  .map(([word, counts]) => ({ word, ...counts }));
+// Popular words - verified from DB, mix of high-count and commonly searched words
+const popularWords = [
+  { word: 'אמתי', total: 173 },
+  { word: 'ארוחה', total: 129 },
+  { word: 'שמן', total: 125 },
+  { word: 'פרי', total: 125 },
+  { word: 'יצירתיות', total: 133 },
+  { word: 'בקלות', total: 125 },
+  { word: 'רותם', total: 123 },
+  { word: 'כיפה', total: 113 },
+  { word: 'בנין', total: 114 },
+  { word: 'דבורה', total: 111 },
+  { word: 'איתן', total: 105 },
+  { word: 'אדמה', total: 105 },
+  { word: 'דמיוני', total: 105 },
+  { word: 'באיטיות', total: 134 },
+  { word: 'בית', total: 66 },
+  { word: 'אש', total: 19 },
+  { word: 'גרם', total: 106 },
+  { word: 'מלט', total: 154 },
+  { word: 'אתן', total: 152 },
+  { word: 'שוטה', total: 119 },
+  { word: 'חזות', total: 119 },
+  { word: 'בוטן', total: 106 },
+  { word: 'מימן', total: 107 },
+  { word: 'סובלני', total: 103 },
+];
 
 // Hebrew letters for the filter
 const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
@@ -186,7 +193,10 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
   function hideResults() {
     resultsSection.classList.add('hidden');
     popularSection.classList.remove('hidden');
-    letterBtns.forEach(btn => btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500'));
+    letterBtns.forEach(btn => {
+      btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+      btn.classList.add('bg-surface', 'border-border', 'text-text');
+    });
   }
 
   async function searchByQuery(query: string) {
@@ -254,9 +264,11 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
 
     letterBtns.forEach(btn => {
       if (btn.getAttribute('data-letter') === letter) {
+        btn.classList.remove('bg-surface', 'border-border', 'text-text');
         btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
       } else {
         btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+        btn.classList.add('bg-surface', 'border-border', 'text-text');
       }
     });
 

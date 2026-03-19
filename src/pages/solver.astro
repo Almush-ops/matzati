@@ -11,20 +11,20 @@ const { data: popularDefs } = await supabase
   .order('search_count', { ascending: false })
   .limit(24);
 
-// Categories with counts
+// Categories with English slugs matching /category/[slug] pages
 const categories = [
-  { name: 'כללי', slug: 'כללי', count: 2311 },
-  { name: 'שפה', slug: 'שפה', count: 2290 },
-  { name: 'אוכל', slug: 'אוכל', count: 1174 },
-  { name: 'מדע', slug: 'מדע', count: 649 },
-  { name: 'ספורט', slug: 'ספורט', count: 644 },
-  { name: 'גיאוגרפיה', slug: 'גיאוגרפיה', count: 506 },
-  { name: 'בעלי חיים', slug: 'בעלי-חיים', count: 377 },
-  { name: 'יהדות', slug: 'יהדות', count: 343 },
-  { name: 'אנשים', slug: 'אנשים', count: 296 },
-  { name: 'טבע', slug: 'טבע', count: 265 },
-  { name: 'מוזיקה', slug: 'מוזיקה', count: 104 },
-  { name: 'ספרות', slug: 'ספרות', count: 69 },
+  { name: 'ידע כללי', slug: 'general', count: 2311 },
+  { name: 'שפה ומילים', slug: 'language', count: 2290 },
+  { name: 'אוכל ומשקאות', slug: 'food', count: 1174 },
+  { name: 'מדעים', slug: 'science', count: 649 },
+  { name: 'ספורט', slug: 'sports', count: 644 },
+  { name: 'גיאוגרפיה', slug: 'geography', count: 506 },
+  { name: 'בעלי חיים', slug: 'animals', count: 377 },
+  { name: 'היסטוריה ויהדות', slug: 'history', count: 343 },
+  { name: 'אנשים', slug: 'people', count: 296 },
+  { name: 'טבע', slug: 'nature', count: 265 },
+  { name: 'מוזיקה', slug: 'music', count: 104 },
+  { name: 'ספרות', slug: 'literature', count: 69 },
 ];
 ---
 

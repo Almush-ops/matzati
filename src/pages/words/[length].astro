@@ -1,34 +1,43 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { supabase } from '../../lib/supabase';
+import { fetchAll } from '../../lib/fetchAll';
 
 export async function getStaticPaths() {
-  // Generate paths for 2-15 letters
-  return Array.from({ length: 14 }, (_, i) => ({
-    params: { length: `${i + 2}-letters` },
-  }));
+  // Bulk fetch ALL solutions with their letter counts
+  const allSolutions = await fetchAll('crossword_solutions', 'solution, letter_count');
+  console.log(`[words] Fetched ${allSolutions.length} solution rows`);
+
+  // Group unique words by letter count
+  const wordsByLength = new Map<number, Set<string>>();
+  for (const s of allSolutions) {
+    if (s.letter_count < 2 || s.letter_count > 12) continue;
+    if (!wordsByLength.has(s.letter_count)) wordsByLength.set(s.letter_count, new Set());
+    wordsByLength.get(s.letter_count)!.add(s.solution);
+  }
+
+  // Generate paths for 2-12 letters
+  return Array.from({ length: 11 }, (_, i) => {
+    const count = i + 2;
+    const wordsSet = wordsByLength.get(count) || new Set();
+    const words = [...wordsSet].sort((a, b) => a.localeCompare(b, 'he'));
+    return {
+      params: { length: `${count}-letters` },
+      props: { words, letterCount: count },
+    };
+  });
 }
 
-const { length } = Astro.params;
-const letterCount = parseInt(length.split('-')[0]);
-
-// Fetch words with this length
-const { data: words } = await supabase
-  .from('hebrew_words')
-  .select('*')
-  .eq('letter_count', letterCount)
-  .order('first_letter')
-  .order('word');
+const { words, letterCount } = Astro.props;
 
 // Group by first letter
 const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
-const wordsByLetter: Record<string, typeof words> = {};
+const wordsByLetter: Record<string, string[]> = {};
 hebrewLetters.forEach(letter => {
-  wordsByLetter[letter] = words?.filter(w => w.first_letter === letter) || [];
+  wordsByLetter[letter] = words.filter((w: string) => w.charAt(0) === letter);
 });
 
-const pageTitle = `מילים בנות ${letterCount} אותיות בעברית | רשימה מלאה`;
-const pageDescription = `${words?.length || 0} מילים בעברית באורך ${letterCount} אותיות. מושלם לתשבצים, וורדל ומשחקי מילים. רשימה מסודרת לפי א-ב.`;
+const pageTitle = `מילים בנות ${letterCount} אותיות בעברית | ${words.length.toLocaleString('he-IL')} מילים`;
+const pageDescription = `${words.length.toLocaleString('he-IL')} מילים בעברית באורך ${letterCount} אותיות. מושלם לתשבצים, וורדל ומשחקי מילים. רשימה מסודרת לפי א-ב.`;
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>
@@ -45,12 +54,12 @@ const pageDescription = `${words?.length || 0} מילים בעברית באור�
       מילים בנות {letterCount} אותיות
     </h1>
     <p class="text-muted mb-8">
-      {words?.length || 0} מילים נמצאו
+      {words.length.toLocaleString('he-IL')} מילים נמצאו
     </p>
 
     <!-- Navigation to other lengths -->
     <div class="flex flex-wrap gap-2 mb-8">
-      {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+      {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
         <a
           href={`/words/${n}-letters`}
           class:list={[
@@ -96,9 +105,9 @@ const pageDescription = `${words?.length || 0} מילים בעברית באור�
               </span>
             </h2>
             <div class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-2">
-              {wordsByLetter[letter]?.map((w) => (
+              {wordsByLetter[letter]?.map((w: string) => (
                 <span class="p-2 bg-surface border border-border rounded-lg text-center text-sm hover:border-brand-300 hover:bg-brand-50 transition-all cursor-default">
-                  {w.word}
+                  {w}
                 </span>
               ))}
             </div>
@@ -106,5 +115,11 @@ const pageDescription = `${words?.length || 0} מילים בעברית באור�
         )
       ))}
     </div>
+
+    {words.length === 0 && (
+      <div class="bg-brand-50 border border-brand-100 rounded-xl p-8 text-center">
+        <p class="text-muted">לא נמצאו מילים באורך זה.</p>
+      </div>
+    )}
   </article>
 </BaseLayout>
