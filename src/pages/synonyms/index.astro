@@ -1,44 +1,38 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-// Popular words - verified from DB, sorted by synonym count
+// Popular words - curated from DB top synonym counts (meaningful words only)
 const popularWords = [
   { word: 'גדול', count: 230 },
   { word: 'טוב', count: 163 },
   { word: 'לב', count: 152 },
   { word: 'גמר', count: 139 },
-  { word: 'מת', count: 134 },
-  { word: 'נפל', count: 130 },
   { word: 'דברים', count: 129 },
   { word: 'רוח', count: 122 },
+  { word: 'מקבל', count: 122 },
   { word: 'אור', count: 109 },
   { word: 'ענק', count: 108 },
   { word: 'חזק', count: 104 },
   { word: 'בעל', count: 104 },
   { word: 'שם', count: 99 },
   { word: 'דבר', count: 98 },
+  { word: 'מלכה', count: 98 },
   { word: 'חלק', count: 96 },
   { word: 'מלך', count: 94 },
+  { word: 'עצב', count: 94 },
   { word: 'זהב', count: 93 },
   { word: 'רגע', count: 92 },
   { word: 'עין', count: 90 },
-  { word: 'נפש', count: 84 },
-  { word: 'קטן', count: 74 },
-  { word: 'שלום', count: 70 },
-  { word: 'ארץ', count: 67 },
-  { word: 'אש', count: 66 },
-  { word: 'כוח', count: 63 },
-  { word: 'כבוד', count: 60 },
-  { word: 'שמח', count: 59 },
-  { word: 'תקווה', count: 53 },
-  { word: 'נשמה', count: 52 },
-  { word: 'בית', count: 50 },
-  { word: 'חכם', count: 45 },
-  { word: 'לשון', count: 40 },
-  { word: 'אדם', count: 35 },
-  { word: 'עבודה', count: 27 },
-  { word: 'כסף', count: 25 },
-  { word: 'צדק', count: 24 },
+];
+
+// Sample synonym pairs for preview
+const samplePairs = [
+  { word: 'שמחה', synonyms: ['אושר', 'עליזות', 'ששון'] },
+  { word: 'יפה', synonyms: ['מקסים', 'נאה', 'מהמם', 'חמוד'] },
+  { word: 'חכם', synonyms: ['גאון', 'פיקח', 'נבון', 'חד'] },
+  { word: 'אהבה', synonyms: ['חיבה', 'רגש'] },
+  { word: 'גדול', synonyms: ['ענק', 'עצום', 'אדיר', 'רב'] },
+  { word: 'חזק', synonyms: ['אמיץ', 'גיבור', 'איתן', 'חסון'] },
 ];
 
 // Hebrew letters for the filter
@@ -67,6 +61,22 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
         </button>
       </div>
     </form>
+
+    <!-- Stats -->
+    <div class="flex justify-center gap-8 md:gap-12">
+      <div class="text-center">
+        <span class="text-2xl md:text-3xl font-bold text-brand-600">4,727</span>
+        <span class="block text-sm text-muted">מילים</span>
+      </div>
+      <div class="text-center">
+        <span class="text-2xl md:text-3xl font-bold text-brand-600">56,341</span>
+        <span class="block text-sm text-muted">נרדפות</span>
+      </div>
+      <div class="text-center">
+        <span class="text-2xl md:text-3xl font-bold text-brand-600">22</span>
+        <span class="block text-sm text-muted">אותיות א-ב</span>
+      </div>
+    </div>
   </section>
 
   <!-- Alphabetical Index -->
@@ -113,6 +123,23 @@ const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
         >
           <span class="group-hover:text-brand-600 transition-colors font-medium">{word}</span>
           <span class="text-xs text-muted">{count} נרדפות</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- Sample Synonym Pairs -->
+  <section class="py-8 md:py-12">
+    <h2 class="text-2xl font-bold mb-6 text-text">דוגמאות למילים נרדפות</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {samplePairs.map(({ word, synonyms }) => (
+        <a href={`/synonyms/${word}`} class="group p-5 bg-surface border border-border rounded-xl hover:border-brand-300 hover:shadow-md transition-all">
+          <span class="text-lg font-bold text-brand-600 group-hover:text-brand-700 transition-colors">{word}</span>
+          <div class="flex flex-wrap gap-2 mt-3">
+            {synonyms.map((syn) => (
+              <span class="px-3 py-1 bg-brand-50 text-brand-600 rounded-full text-sm">{syn}</span>
+            ))}
+          </div>
         </a>
       ))}
     </div>

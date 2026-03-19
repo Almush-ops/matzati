@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { supabase } from '../../lib/supabase';
+import { fetchAll } from '../../lib/fetchAll';
 
 // Category definitions
 const categoryMap: Record<string, { name: string; icon: string; dbCategories: string[] }> = {
@@ -33,28 +33,18 @@ if (!category) {
   return Astro.redirect('/404');
 }
 
-// Fetch ALL definitions in this category (with or without solutions)
-const { data: definitions } = await supabase
-  .from('crossword_definitions')
-  .select(`
-    id,
-    slug,
-    definition_he,
-    crossword_solutions(id)
-  `)
-  .in('category', category.dbCategories)
-  .order('definition_he');
+// Fetch ALL definitions at build time (no 1000-row limit)
+const allDefs = await fetchAll('crossword_definitions', 'id, slug, definition_he, category');
+const definitions = allDefs.filter(d => category.dbCategories.includes(d.category))
+  .sort((a, b) => a.definition_he.localeCompare(b.definition_he, 'he'));
 
 // Group by first letter
-const groupedDefinitions = definitions?.reduce((acc, def) => {
+const groupedDefinitions = definitions.reduce((acc: Record<string, typeof definitions>, def: any) => {
   const firstLetter = def.definition_he.charAt(0);
   if (!acc[firstLetter]) acc[firstLetter] = [];
-  acc[firstLetter].push({
-    ...def,
-    solutionCount: def.crossword_solutions?.length || 0
-  });
+  acc[firstLetter].push(def);
   return acc;
-}, {} as Record<string, typeof definitions>) || {};
+}, {});
 
 // Sort letters
 const sortedLetters = Object.keys(groupedDefinitions).sort((a, b) => a.localeCompare(b, 'he'));
@@ -124,11 +114,6 @@ const breadcrumbSchema = {
               <span class="text-text group-hover:text-brand-600 transition-colors font-medium">
                 {def.definition_he}
               </span>
-              {def.solutionCount > 0 && (
-                <span class="text-sm text-muted mr-2">
-                  ({def.solutionCount} פתרונות)
-                </span>
-              )}
             </a>
           ))}
         </div>

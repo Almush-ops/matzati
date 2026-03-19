@@ -32,8 +32,24 @@ const categories = [
   <!-- Hero Search -->
   <section class="text-center py-12 md:py-16">
     <h1 class="text-3xl md:text-4xl font-bold mb-3 text-text">פותר תשבצים אוטומטי</h1>
-    <p class="text-muted mb-2">מאגר של למעלה מ-88,000 פתרונות ו-10,000 הגדרות</p>
-    <p class="text-sm text-muted mb-8">הקלד הגדרה או תבנית (לדוגמה: א?ב?ה)</p>
+    <p class="text-muted mb-2">המאגר הגדול בישראל לפתרון תשבצים</p>
+    <p class="text-sm text-muted mb-4">הקלד הגדרה או תבנית (לדוגמה: א?ב?ה)</p>
+
+    <!-- Stats -->
+    <div class="flex justify-center gap-6 md:gap-10 mb-8">
+      <div class="text-center">
+        <span class="text-xl md:text-2xl font-bold text-brand-600">88,134</span>
+        <span class="block text-xs text-muted">פתרונות</span>
+      </div>
+      <div class="text-center">
+        <span class="text-xl md:text-2xl font-bold text-brand-600">10,003</span>
+        <span class="block text-xs text-muted">הגדרות</span>
+      </div>
+      <div class="text-center">
+        <span class="text-xl md:text-2xl font-bold text-brand-600">15</span>
+        <span class="block text-xs text-muted">קטגוריות</span>
+      </div>
+    </div>
 
     <form id="search-form" class="max-w-2xl mx-auto mb-6">
       <div class="relative">
@@ -209,7 +225,10 @@ const categories = [
     categoriesSection.classList.remove('hidden');
     if (popularSection) popularSection.classList.remove('hidden');
     activeLetterCount = null;
-    letterCountBtns.forEach(btn => btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500'));
+    letterCountBtns.forEach(btn => {
+      btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+      btn.classList.add('bg-surface', 'border-border');
+    });
   }
 
   // Letter count filter buttons
@@ -219,9 +238,14 @@ const categories = [
       if (activeLetterCount === count) {
         activeLetterCount = null;
         btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+        btn.classList.add('bg-surface', 'border-border');
       } else {
         activeLetterCount = count;
-        letterCountBtns.forEach(b => b.classList.remove('bg-brand-500', 'text-white', 'border-brand-500'));
+        letterCountBtns.forEach(b => {
+          b.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+          b.classList.add('bg-surface', 'border-border');
+        });
+        btn.classList.remove('bg-surface', 'border-border');
         btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
       }
       // Re-run search if there's a query
